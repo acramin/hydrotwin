@@ -1,12 +1,9 @@
 import streamlit as st
 import pandas as pd
 from db.crud import get_bancadas, get_raw_recent, get_sensor_proc_ultimo
+from core.anomalias import detectar_anomalias
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
-
-# st.title("🌱 HydroTwin")
-
-# st.header("Monitoramento")
 
 # st.markdown(
 #     """
@@ -17,6 +14,10 @@ st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="�
 #     - Histórico / log de eventos
 #     - Média suavizada (média móvel) para identificar tendências
 #     """)
+
+# =========================
+# 🔬 Monitoramento Detalhado
+# =========================
 
 st.title("🔬 Monitoramento Detalhado")
 
@@ -42,13 +43,17 @@ if proc:
 else:
     col1.metric("Status", "Sem dados")
     col2.metric("Risk Score", "-")
-    st.info("Ainda não há agregação em sensor_proc para esta bancada. Assim que a próxima leitura bruta entrar, o cálculo será gerado automaticamente.")
+    st.info("Ainda não há agregação para esta bancada. Assim que a próxima leitura bruta entrar, o cálculo será gerado automaticamente.")
+    st.stop()
 
 if not df.empty:
     df["dth_recebido"] = pd.to_datetime(df["dth_recebido"])
     df = df.sort_values("dth_recebido")
+    resultado_anomalias = detectar_anomalias(df)
 else:
+    resultado_anomalias = None
     st.warning("Sem leituras brutas recentes para exibir gráficos.")
+    st.stop()
 
 # GRÁFICOS PRINCIPAIS
 st.subheader("Temperatura")
@@ -62,7 +67,7 @@ if not df.empty:
 # SECUNDÁRIOS
 col1, col2 = st.columns(2)
 
-col1.subheader("TDS")
+col1.subheader("EC")
 if not df.empty:
     col1.line_chart(df.set_index("dth_recebido")["ec"])
 
@@ -77,6 +82,35 @@ if proc and proc.get("detalhes"):
         columns=["sensor", "risco_%"],
     )
     st.dataframe(risco_df, hide_index=True)
+
+st.subheader("Detecção de anomalias")
+if not resultado_anomalias:
+    st.info("Sem dados suficientes para detectar anomalias.")
+else:
+    col_a, col_b, col_c = st.columns(3)
+    col_a.metric("Status de anomalia", resultado_anomalias["status"])
+    col_b.metric("Anomaly Score", f'{resultado_anomalias["score"]:.1f}')
+    col_c.metric("Sensores com anomalia", resultado_anomalias["total_anomalias"])
+
+    if resultado_anomalias["anomalias"]:
+        anomalias_df = pd.DataFrame(resultado_anomalias["anomalias"])
+        st.dataframe(
+            anomalias_df[
+                [
+                    "nome",
+                    "severidade",
+                    "score",
+                    "valor_atual",
+                    "mediana",
+                    "z_score",
+                    "n_amostras",
+                    "mensagem",
+                ]
+            ],
+            hide_index=True,
+        )
+    else:
+        st.success("Nenhuma anomalia relevante detectada na janela recente.")
 
 st.subheader("Leituras recentes")
 with st.expander("Ver dados brutos"):
