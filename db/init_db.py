@@ -143,6 +143,9 @@ def create_tables():
 
 
 drop_tables()
+
+print("Tabelas deletadas (se existiam).")
+
 create_tables()
 
 print("Banco criado com sucesso!")
