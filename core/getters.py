@@ -51,6 +51,10 @@ def get_last_status():
     status = {}
     
     for bancada_id, nome, *_ in get_bancadas():
+        
+        if not bancada_id:
+            return
+        
         leitura = get_sensor_proc_ultimo(bancada_id)
         dth_calculado = 'atualizado_em' if leitura else None
 
@@ -60,7 +64,7 @@ def get_last_status():
         else:
             status[nome] = "Sem dados"
     
-    status[dth_calculado] = formatar_horario(leitura["dth_calculado"]) if dth_calculado else "N/A"
+        status[dth_calculado] = formatar_horario(leitura["dth_calculado"]) if dth_calculado else "N/A"
         
     return status
 
