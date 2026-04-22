@@ -64,7 +64,10 @@ def get_last_status():
         else:
             status[nome] = "Sem dados"
     
-        status[dth_calculado] = formatar_horario(leitura["dth_calculado"]) if dth_calculado else "N/A"
+        if dth_calculado is not None:
+            status[dth_calculado] = formatar_horario(leitura["dth_calculado"]) if dth_calculado else "N/A"
+        else:
+            status['atualizado_em'] = "N/A"
         
     return status
 

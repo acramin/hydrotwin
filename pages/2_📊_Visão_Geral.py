@@ -46,7 +46,9 @@ st.subheader("Indicadores Gerais")
 
 for bancada_id, nome, *_ in get_bancadas():
     kpis = get_kpis(bancada_id, nome)
-    ##st.markdown(str(kpis))
+    
+    if len(kpis.get(nome, {})) == 0:
+        st.info(f"Nenhum KPI calculado ainda para a bancada {nome}. Assim que as próximas leituras brutas entrarem, os cálculos serão gerados automaticamente.")
     
     if kpis:
         st.markdown(f"**{nome.capitalize()}**")
@@ -59,7 +61,7 @@ alertas = get_alertas()
 st.subheader("Alertas Ativos")
 
 if not alertas:
-    st.success("Nenhum alerta ativo! Todas as bancadas estão saudáveis.")
+    st.success("Nenhum alerta ativo!")
 else:
     for alerta in alertas:
         st.warning(alerta)
