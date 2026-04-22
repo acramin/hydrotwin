@@ -35,22 +35,42 @@ if st.button("Salvar"):
 
     cultura_id = cultura_dict[cultura_nome]
 
-    for bancada_id, nome, cultura_nome, *_ in get_bancadas(): # Verifica se a bancada já existe
-    
-        if nome == nome and cultura_nome == cultura_nome:
-            inserir_filete(
-                bancada_id,
-                cultura_id,
-                data_inicio.strftime("%Y-%m-%d")
-            )
-            st.success("Bancada já cadastrada. Novo filete criado para a data de início selecionada.")
+    # print(f"Dados para cadastro: Nome: {nome}, Cultura: {cultura_nome} (ID: {cultura_id}), Data de início: {data_inicio}")
+
+    if len(get_bancadas()) == 0:
+        bancada_id = inserir_bancada(
+                    nome,
+                    cultura_id
+                )
+                
+        if bancada_id is None:
+            st.error("ID da bancada não encontrado. Por favor, cadastre a bancada primeiro.")
+            st.stop()
         
+        inserir_filete(
+            bancada_id,
+            cultura_id,
+            data_inicio.strftime("%Y-%m-%d")
+        )
+        st.success("Bancada cadastrada com sucesso!")
+    
+    else:
+        for bancada_id, nome_bancada, cultura_nome_cadastrada, *_ in get_bancadas(): # Verifica se a bancada já existe
+            
+            if nome == nome_bancada and cultura_nome == cultura_nome_cadastrada:
+                inserir_filete(
+                    bancada_id,
+                    cultura_id,
+                    data_inicio.strftime("%Y-%m-%d")
+                )
+                st.success("Bancada já cadastrada. Novo filete criado para a data de início selecionada.")
+                break
         else:
             bancada_id = inserir_bancada(
-                nome,
-                cultura_id
-            )
-            
+                    nome,
+                    cultura_id
+                )
+                
             if bancada_id is None:
                 st.error("ID da bancada não encontrado. Por favor, cadastre a bancada primeiro.")
                 st.stop()
