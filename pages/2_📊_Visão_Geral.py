@@ -12,11 +12,21 @@ st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="�
 
 from core.getters import *
 
+# =========================
+# 📊 Visão Geral
+# =========================
+
 st.title("📊 Visão Geral")
 
 status = get_last_status()
 
-st.caption(f"Status atual das bancadas, indicadores rápidos e alertas ativos.\nAtualizado a cada 15 minutos.\nÚltima atualização: {status.get('atualizado_em', 'N/A')}")
+# print("Status:", status)
+
+if len(status) == 0:
+    st.info("Cadastre uma bancada para começar a gerar status e históricos.")
+    st.stop()
+
+st.caption(f"Status atual das bancadas, indicadores rápidos e alertas ativos.\nAtualizado a cada 5 segundos.\nÚltima atualização: {status.get('atualizado_em', 'N/A')}")
 
 # STATUS
 st.subheader("Status das Bancadas")
