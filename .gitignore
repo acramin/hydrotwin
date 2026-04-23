@@ -1,4 +1,7 @@
+*/teste.py
 .vscode/
+*/hydroponic.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
