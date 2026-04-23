@@ -71,16 +71,47 @@ Filete: filete_bancada
 
 ---
 
+## Lógicas Implementadas
+
+### Classificação
+
+Aqui a ideia foi classificar o estado da bancada em 3 possíveis status:
+
+- Saudável
+- Atenção
+- Crítico
+
+A clafissicação é triggada a cada 10 segundos e trigga os alertas.
+
+Tem seu próprio arquivo de lógica, mas a interação com o banco está toda no crud.
+
+### Alerta
+
+É criado toda vez que o status é "Atenção" ou "Crítico".  Fica armazenado na tabela de alertas e é exibida para o usuário na Visão Geral.
+
+Não tem seu próprio arquivo de lógica, está tudo no crud, sincronizado com o crud de Classifiicação.
+
+### Anomalia
+
+A ideia é de detectar anomalias estatísitcas nos dados coletados / fakeados.
+
+A classificação de anomalias é similar a classificação de estado.
+
+Tem seu prórpio arquivo de lógica, não possui tabela no banco que guarde essa métrica, é apenas exibido no Monitoramento Detalhado.
+
+---
+
 ## Anoações
 
 ### Bugs de front end:
 
 - nome da bancada não reseta após envio
 - quero poder filtrar por bancada, por sensores, por periodo na aba monitoramento
+- tudo referente a front pode ser melhorado
 
 ### A fazer:
 
-- separar lógica de classificação e outros calculos em outro arquivo
 - arrumar página inicial com descritivo do projeto, imagens, etc
 - escrever um readme decente
 - organizar o diretório
+- implementar visões e outras lógicas de negócio
