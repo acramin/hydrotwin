@@ -114,4 +114,9 @@ Tem seu prórpio arquivo de lógica, não possui tabela no banco que guarde essa
 - arrumar página inicial com descritivo do projeto, imagens, etc
 - escrever um readme decente
 - organizar o diretório
-- implementar visões e outras lógicas de negócio
+
+### Revisar:
+
+- Lógica de risco
+- Lógica de anomalia
+- Lógica de tendência
