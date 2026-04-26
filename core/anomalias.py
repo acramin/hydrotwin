@@ -13,7 +13,7 @@ def _status_from_score(score):
 		return "Crítico"
 	if score >= 60:
 		return "Atenção"
-	return "Estável"
+	return "Saudável"
 
 
 def _zscore_robusto(serie):
