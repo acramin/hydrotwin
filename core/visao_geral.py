@@ -20,7 +20,7 @@ def get_last_status():
         leitura = get_sensor_proc_ultimo(bancada_id)
 
         if leitura:
-            status[nome] = leitura["status"]
+            status[nome] = leitura.get("status_exibicao")
             status["atualizado_em"] = formatar_data(leitura["dth_calculado"])
             continue
         else:
