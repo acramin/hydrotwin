@@ -8,7 +8,14 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from core.classificar import calcular_risco_estatistico, score_para_status, DEFAULT_LIMITES
+from core.classificar import (
+    calcular_risco_estatistico,
+    score_para_status,
+    calcular_status_consolidado,
+    DEFAULT_LIMITES,
+)
+from core.anomalias import detectar_anomalias
+from core.previsao import prever_estado
 
 DB_PATH = Path(__file__).resolve().with_name("hydroponic.db")
 
@@ -474,7 +481,10 @@ def get_sensor_proc_ultimo(bancada_id):
                    vazao_min, vazao_max, vazao_mean,
                    nivel_tanque_min, nivel_tanque_max, nivel_tanque_mean,
                    umidade_min, umidade_max, umidade_mean,
-                   score, n_amostras, dth_calculado
+                 score, n_amostras, dth_calculado,
+                 anomalia_score, anomalia_status,
+                 tendencia_score, tendencia_status,
+                 consolidado_score, consolidado_status, consolidado_motivo
             FROM sensor_proc
             WHERE bancada_id = ?
             ORDER BY dth_calculado DESC, id DESC
@@ -517,9 +527,17 @@ def get_sensor_proc_ultimo(bancada_id):
             "score",
             "n_amostras",
             "dth_calculado",
+            "anomalia_score",
+            "anomalia_status",
+            "tendencia_score",
+            "tendencia_status",
+            "consolidado_score",
+            "consolidado_status",
+            "consolidado_motivo",
         ]
         dados = dict(zip(colunas, linha))
         dados["status"] = score_para_status(dados["score"])
+        dados["status_exibicao"] = dados.get("consolidado_status")
         return dados
     finally:
         conn.close()
@@ -566,6 +584,17 @@ def processar_sensor(bancada_id, janela_horaria="24h", horas=24):
         cultura = _valor_cultura(cursor, bancada_id)
         estatisticas = _estatisticas_dataframe(df)
         risco = calcular_risco_estatistico(estatisticas, cultura)
+        limites = {metrica: _resolver_limites(cultura, metrica) for metrica in DEFAULT_LIMITES}
+        anomalia = detectar_anomalias(df, limites=limites)
+        previsao = prever_estado(df, limites=limites)
+        consolidado = calcular_status_consolidado(
+            risco_score=risco.get("score"),
+            anomalia_score=anomalia.get("score"),
+            tendencia_score=previsao.get("score"),
+            risco_status=risco.get("status"),
+            anomalia_status=anomalia.get("status"),
+            tendencia_status=previsao.get("status"),
+        )
         n_amostras = int(df.shape[0])
 
         cursor.execute(
@@ -580,7 +609,10 @@ def processar_sensor(bancada_id, janela_horaria="24h", horas=24):
                 vazao_min, vazao_max, vazao_mean,
                 nivel_tanque_min, nivel_tanque_max, nivel_tanque_mean,
                 umidade_min, umidade_max, umidade_mean,
-                score, n_amostras
+                score, n_amostras,
+                anomalia_score, anomalia_status,
+                tendencia_score, tendencia_status,
+                consolidado_score, consolidado_status, consolidado_motivo
             ) VALUES (
                 ?, ?,
                 ?, ?, ?,
@@ -591,7 +623,10 @@ def processar_sensor(bancada_id, janela_horaria="24h", horas=24):
                 ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?,
-                ?, ?
+                ?, ?,
+                ?, ?,
+                ?, ?,
+                ?, ?, ?
             )
             """,
             (
@@ -623,6 +658,13 @@ def processar_sensor(bancada_id, janela_horaria="24h", horas=24):
                 estatisticas["umidade_mean"],
                 risco["score"],
                 n_amostras,
+                anomalia.get("score", 0.0),
+                anomalia.get("status", "Sem dados"),
+                previsao.get("score", 0.0),
+                previsao.get("status", "Sem previsão"),
+                consolidado["score"],
+                consolidado["status"],
+                consolidado["motivo"],
             ),
         )
 
@@ -640,6 +682,13 @@ def processar_sensor(bancada_id, janela_horaria="24h", horas=24):
             "score": risco["score"],
             "status": risco["status"],
             "detalhes": risco["detalhes"],
+            "anomalia_score": anomalia.get("score", 0.0),
+            "anomalia_status": anomalia.get("status", "Sem dados"),
+            "tendencia_score": previsao.get("score", 0.0),
+            "tendencia_status": previsao.get("status", "Sem previsão"),
+            "consolidado_score": consolidado["score"],
+            "consolidado_status": consolidado["status"],
+            "consolidado_motivo": consolidado["motivo"],
             "n_amostras": n_amostras,
             "janela_horaria": janela_horaria,
         }
