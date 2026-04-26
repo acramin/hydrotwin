@@ -45,21 +45,36 @@ resultado_previsao = dados["resultado_previsao"]
 resultado_anomalias = dados["resultado_anomalias"]
 
 # STATUS + SCORE
-st.subheader("Status atual do sistema", help="Como o sistema está operando? \n\nClassificação de estado (0-100): quanto maior o score, maior o risco operacional. Considera média e variabilidade de cada sensor em relação aos limites da bancada, com pesos por métrica.")
-col1, col2 = st.columns(2)
+st.subheader("Status consolidado do sistema", help="Como o sistema está operando agora? \n\nStatus consolidado combina risco atual, anomalias e tendência operacional para reduzir ambiguidades na interpretação.")
+col1, col2, col3 = st.columns(3)
 if proc:
-    col1.metric("Status", proc["status"], help="Status derivado de Score de risco. \n\nFaixas: 0-33 = Saudável, 34-66 = Atenção, 67-100 = Crítico.")
+    status_consolidado = proc.get("consolidado_status") or proc["status"]
+    score_consolidado = proc.get("consolidado_score")
+    motivo_consolidado = proc.get("consolidado_motivo") or "Sem motivo consolidado disponível para esta leitura."
+
+    col1.metric(
+        "Status consolidado",
+        status_consolidado,
+        help="Classificação unificada para evitar conflito entre risco, anomalia e tendência."
+    )
     col2.metric(
-        "Score de risco",
-        f'{proc["score"]:.1f}',
+        "Score consolidado",
+        f'{(score_consolidado if score_consolidado is not None else proc["score"]):.1f}',
         help=(
-            "Score de risco (0-100): combina a média e variabilidade de cada sensor em relação aos limites da bancada, com pesos por métrica. "
+            "Score consolidado (0-100): maior severidade observada entre risco atual, anomalia e tendência operacional."
         )
     )
+    col3.metric(
+        "Score de risco",
+        f'{proc["score"]:.1f}',
+        help="Score de risco estatístico da janela processada."
+    )
+    st.caption(f"Motivo do consolidado: {motivo_consolidado}")
     st.caption(f'Janela processada: {proc["janela_horaria"]} | Amostras: {proc["n_amostras"]} | Atualizado em: {formatar_data(proc["dth_calculado"])}')
 else:
-    col1.metric("Status", "Sem dados")
-    col2.metric("Score de risco", "-")
+    col1.metric("Status consolidado", "Sem dados")
+    col2.metric("Score consolidado", "-")
+    col3.metric("Score de risco", "-")
     st.info("Ainda não há agregação para esta bancada. Assim que a próxima leitura bruta entrar, o cálculo será gerado automaticamente.")
     st.stop()
 
@@ -122,15 +137,18 @@ st.subheader("Detecção de anomalias", help="Identifique comportamentos incomun
 if not resultado_anomalias:
     st.info("Sem dados suficientes para detectar anomalias.")
 else:
+    anomalia_status = proc.get("anomalia_status") if proc else resultado_anomalias["status"]
+    anomalia_score = proc.get("anomalia_score") if proc else resultado_anomalias["score"]
+
     col_a, col_b, col_c = st.columns(3)
     col_a.metric(
         "Status de anomalia",
-        resultado_anomalias["status"],
-        help="Status derivado do Score de Anomalia. \n\nFaixas: 0-59 = Estável, 60-84 = Atenção, 85-100 = Crítico."
+        anomalia_status,
+        help="Status derivado do Score de Anomalia. \n\nFaixas: 0-59 = Saudável, 60-84 = Atenção, 85-100 = Crítico."
     )
     col_b.metric(
         "Score de Anomalia",
-        f'{resultado_anomalias["score"]:.1f}',
+        f'{(anomalia_score if anomalia_score is not None else resultado_anomalias["score"]):.1f}',
         help=(
             "Score de anomalia (0-100): por sensor, usa a pior entre duas lentes: \n\n"
             "(1) desvio estatístico robusto da série recente (z-score) e "
@@ -151,10 +169,12 @@ else:
         st.success("Nenhuma anomalia relevante detectada na janela recente.")
 
 st.subheader("Tendência operacional", help="Qual é a direção do sistema? \n\nAnálise de tendência recente para cada sensor, indicando se a métrica está melhorando, piorando ou estável. A previsão geral é derivada do sensor com a tendência mais relevante, mas também mostramos o número total de sensores que indicam uma tendência clara.")
+status_tendencia = proc.get("tendencia_status") if proc else resultado_previsao["status"]
+score_tendencia = proc.get("tendencia_score") if proc else resultado_previsao["score"]
 col_a, col_b, col_c = st.columns(3)
 col_a.metric(
     "Status previsto",
-    resultado_previsao["status"],
+    status_tendencia,
     help=(
         "Status derivado da Previsão geral. \n\n"
         "Faixas: 0-33 = Saudável, 34-66 = Atenção, 67-100 = Crítico."
@@ -162,7 +182,7 @@ col_a.metric(
 )
 col_b.metric(
     "Previsão geral",
-    f'{resultado_previsao["score"]:.1f}',
+    f'{(score_tendencia if score_tendencia is not None else resultado_previsao["score"]):.1f}',
     help=(
         "Score de tendência (0-100): mede quão consistente e relevante é a tendência recente. \n\n" 
         "Composição por sensor: Consistência direcional (40%), Força da tendência/slope (30%), "
