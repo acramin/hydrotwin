@@ -29,15 +29,15 @@ def registrar_bancada_ativa(bancada_id):
 
 def _gerar_linha_fake(bancada_id):
     return (
-        f"B{bancada_id},"
-        f"{random.uniform(5.5, 6.5)},"
-        f"{random.uniform(0.5, 1.5)},"
-        f"{random.uniform(15, 30)},"
-        f"{random.uniform(18, 26)},"
-        f"{random.uniform(24, 28)},"
-        f"{random.uniform(800, 1200)},"
-        f"{random.uniform(40, 60)},"
-        f"{random.uniform(50, 70)}"
+        f"B{bancada_id}," # bancada_id
+        f"{random.uniform(5.5, 6.5)}," # pH 
+        f"{random.uniform(0.5, 2.0)}," # condutividade elétrica 
+        f"{random.uniform(15, 30)}," # temperatura ambiente
+        f"{random.uniform(10, 30)}," # temperatura água
+        f"{random.uniform(8, 16)}," # luminosidade
+        f"{random.uniform(800, 1200)}," # vazão
+        f"{random.uniform(20, 30)}," # nivel tanque
+        f"{random.uniform(50, 70)}" # umidade
     )
 
 
