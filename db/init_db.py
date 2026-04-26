@@ -72,7 +72,7 @@ def create_tables():
         vazao REAL,
         nivel_tanque REAL,
         umidade REAL,
-        dth_recebido DATETIME DEFAULT CURRENT_TIMESTAMP,
+        dth_recebido DATETIME DEFAULT (datetime('now', '-3 hours')),
         FOREIGN KEY (bancada_id) REFERENCES bancada(id)
     );
     """)
@@ -109,7 +109,7 @@ def create_tables():
         umidade_mean REAL,
         score REAL,
         n_amostras INTEGER,
-        dth_calculado DATETIME DEFAULT CURRENT_TIMESTAMP,
+        dth_calculado DATETIME DEFAULT (datetime('now', '-3 hours')),
         FOREIGN KEY (bancada_id) REFERENCES bancada(id)
     );
     """)
@@ -121,7 +121,7 @@ def create_tables():
         bancada_id INTEGER NOT NULL,
         tipo TEXT,
         mensagem TEXT,
-        dth_criado DATETIME DEFAULT CURRENT_TIMESTAMP,
+        dth_criado DATETIME DEFAULT (datetime('now', '-3 hours')),
         dth_resolvido DATETIME,
         FOREIGN KEY (bancada_id) REFERENCES bancada(id)
     );
