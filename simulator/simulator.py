@@ -1,3 +1,4 @@
+from datetime import datetime
 import random
 import time
 import sys
@@ -54,7 +55,7 @@ def _loop_simulacao():
                 if dados:
                     inserir_sensor_raw(*dados)
                     registrar_bancada_ativa(dados[0])
-                    print(f"Leitura fake inserida para bancada {dados[0]}")
+                    print(f"{datetime.now()}: Leitura fake inserida para bancada {dados[0]}")
             except Exception as e:
                 print("Erro ao processar linha fake:", e)
 
