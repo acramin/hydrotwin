@@ -2,17 +2,8 @@ from __future__ import annotations
 
 from math import isnan
 
-
-DEFAULT_LIMITES = {
-    "ph": (5.5, 6.8),
-    "ec": (0.8, 2.2),
-    "temperatura_ambiente": (18.0, 26.0),
-    "temperatura_agua": (20.0, 24.0),
-    "luminosidade": (12.0, None),
-    "vazao": (None, None),
-    "nivel_tanque": (40.0, None),
-    "umidade": (45.0, 75.0),
-}
+from utils import to_float
+from default import DEFAULT_LIMITES
 
 PESOS_PADRAO = {
     "ph": 0.24,
@@ -24,22 +15,6 @@ PESOS_PADRAO = {
     "nivel_tanque": 0.03,
     "umidade": 0.03,
 }
-
-
-def _to_float(valor):
-    if valor is None:
-        return None
-
-    try:
-        numero = float(valor)
-    except (TypeError, ValueError):
-        return None
-
-    if isnan(numero):
-        return None
-
-    return numero
-
 
 def _status_from_score(score):
     if score <= 33:
@@ -96,7 +71,7 @@ def _interval_risk(mean, std, limite_min, limite_max):
 
 def _estatistica(linha, chave, sufixo):
     valor = linha.get(f"{chave}_{sufixo}")
-    return _to_float(valor)
+    return to_float(valor)
 
 
 def calcular_risco_estatistico(estatisticas, cultura=None):
@@ -122,7 +97,7 @@ def calcular_risco_estatistico(estatisticas, cultura=None):
         if limite_min is None and limite_max is None:
             limite_min, limite_max = DEFAULT_LIMITES.get(metrica, (None, None))
 
-        risco = _interval_risk(media, desvio, _to_float(limite_min), _to_float(limite_max))
+        risco = _interval_risk(media, desvio, to_float(limite_min), to_float(limite_max))
 
         amostras = _estatistica(estatisticas, metrica, "min")
         maximo = _estatistica(estatisticas, metrica, "max")
@@ -146,5 +121,5 @@ def calcular_risco_estatistico(estatisticas, cultura=None):
 
 
 def score_para_status(score):
-    return _status_from_score(_to_float(score) or 0.0)
+    return _status_from_score(to_float(score) or 0.0)
 
