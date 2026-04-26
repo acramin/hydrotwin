@@ -45,14 +45,21 @@ resultado_previsao = dados["resultado_previsao"]
 resultado_anomalias = dados["resultado_anomalias"]
 
 # STATUS + SCORE
+st.subheader("Status atual do sistema", help="Como o sistema está operando? \n\nClassificação de estado (0-100): quanto maior o score, maior o risco operacional. Considera média e variabilidade de cada sensor em relação aos limites da bancada, com pesos por métrica.")
 col1, col2 = st.columns(2)
 if proc:
-    col1.metric("Status", proc["status"])
-    col2.metric("Risk Score", f'{proc["score"]:.1f}')
+    col1.metric("Status", proc["status"], help="Status derivado de Score de risco. \n\nFaixas: 0-33 = Saudável, 34-66 = Atenção, 67-100 = Crítico.")
+    col2.metric(
+        "Score de risco",
+        f'{proc["score"]:.1f}',
+        help=(
+            "Score de risco (0-100): combina a média e variabilidade de cada sensor em relação aos limites da bancada, com pesos por métrica. "
+        )
+    )
     st.caption(f'Janela processada: {proc["janela_horaria"]} | Amostras: {proc["n_amostras"]} | Atualizado em: {formatar_data(proc["dth_calculado"])}')
 else:
     col1.metric("Status", "Sem dados")
-    col2.metric("Risk Score", "-")
+    col2.metric("Score de risco", "-")
     st.info("Ainda não há agregação para esta bancada. Assim que a próxima leitura bruta entrar, o cálculo será gerado automaticamente.")
     st.stop()
 
@@ -61,7 +68,7 @@ if df.empty:
     st.stop()
 
 # GRÁFICOS DE ZONA (candidatos fortes)
-st.subheader("Gráficos por variável")
+st.subheader("Gráficos por variável", help="Visualize a evolução de cada métrica ao longo do tempo. \n\nModo 'Zona': gráficos com faixas de risco coloridas, baseados nos limites da bancada, para destacar rapidamente quando uma métrica está em zona de atenção ou crítica. \n\nModo 'Linha': gráficos tradicionais de linha, focando na tendência temporal sem sobreposição de zonas.")
 modo_visualizacao = st.radio(
     "Modo de visualização",
     options=["Zona", "Linha"],
@@ -111,10 +118,58 @@ if not risco_df.empty:
     st.subheader("Contribuição do risco")
     st.dataframe(risco_df, hide_index=True)
 
-st.subheader("Tendência operacional")
+st.subheader("Detecção de anomalias", help="Identifique comportamentos incomuns nos dados. \n\nAnomalias são pontos de dados que se desviam significativamente do comportamento esperado, indicando possíveis problemas no sistema.")
+if not resultado_anomalias:
+    st.info("Sem dados suficientes para detectar anomalias.")
+else:
+    col_a, col_b, col_c = st.columns(3)
+    col_a.metric(
+        "Status de anomalia",
+        resultado_anomalias["status"],
+        help="Status derivado do Score de Anomalia. \n\nFaixas: 0-59 = Estável, 60-84 = Atenção, 85-100 = Crítico."
+    )
+    col_b.metric(
+        "Score de Anomalia",
+        f'{resultado_anomalias["score"]:.1f}',
+        help=(
+            "Score de anomalia (0-100): por sensor, usa a pior entre duas lentes: \n\n"
+            "(1) desvio estatístico robusto da série recente (z-score) e "
+            "(2) violação direta de limite mínimo/máximo. \n\n"
+            "O score geral é a média dos 3 maiores scores de anomalia "
+            "(ou o maior score monitorado, se não houver anomalias >= 60). "
+        ),
+    )
+    col_c.metric("Sensores com anomalia", resultado_anomalias["total_anomalias"])
+
+    anomalias_df = montar_df_anomalias(resultado_anomalias)
+    if not anomalias_df.empty:
+        st.dataframe(
+            anomalias_df,
+            hide_index=True,
+        )
+    else:
+        st.success("Nenhuma anomalia relevante detectada na janela recente.")
+
+st.subheader("Tendência operacional", help="Qual é a direção do sistema? \n\nAnálise de tendência recente para cada sensor, indicando se a métrica está melhorando, piorando ou estável. A previsão geral é derivada do sensor com a tendência mais relevante, mas também mostramos o número total de sensores que indicam uma tendência clara.")
 col_a, col_b, col_c = st.columns(3)
-col_a.metric("Status previsto", resultado_previsao["status"])
-col_b.metric("Previsão geral", f'{resultado_previsao["score"]:.1f}')
+col_a.metric(
+    "Status previsto",
+    resultado_previsao["status"],
+    help=(
+        "Status derivado da Previsão geral. \n\n"
+        "Faixas: 0-33 = Saudável, 34-66 = Atenção, 67-100 = Crítico."
+    ),
+)
+col_b.metric(
+    "Previsão geral",
+    f'{resultado_previsao["score"]:.1f}',
+    help=(
+        "Score de tendência (0-100): mede quão consistente e relevante é a tendência recente. \n\n" 
+        "Composição por sensor: Consistência direcional (40%), Força da tendência/slope (30%), "
+        "Estabilidade da série suavizada (20%) e quantidade de amostras (10%). \n\n"
+        "A previsão geral mostra o maior score entre as tendências observadas. "
+    ),
+)
 col_c.metric("Sensores previstos", resultado_previsao["total_previsoes"])
 
 st.caption(resultado_previsao["resumo"])
@@ -127,24 +182,6 @@ if not previsao_df.empty:
     )
 else:
     st.info("Ainda não há tendência operacional clara para as leituras recentes.")
-
-st.subheader("Detecção de anomalias")
-if not resultado_anomalias:
-    st.info("Sem dados suficientes para detectar anomalias.")
-else:
-    col_a, col_b, col_c = st.columns(3)
-    col_a.metric("Status de anomalia", resultado_anomalias["status"])
-    col_b.metric("Anomaly Score", f'{resultado_anomalias["score"]:.1f}')
-    col_c.metric("Sensores com anomalia", resultado_anomalias["total_anomalias"])
-
-    anomalias_df = montar_df_anomalias(resultado_anomalias)
-    if not anomalias_df.empty:
-        st.dataframe(
-            anomalias_df,
-            hide_index=True,
-        )
-    else:
-        st.success("Nenhuma anomalia relevante detectada na janela recente.")
 
 st.subheader("Leituras recentes")
 with st.expander("Ver dados brutos"):
