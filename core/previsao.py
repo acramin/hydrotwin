@@ -1,41 +1,17 @@
 from __future__ import annotations
 
-from math import isnan
-
 import pandas as pd
 
-from core.classificar import DEFAULT_LIMITES, score_para_status
+from core.classificar import score_para_status
+
+from default import METRICAS_CONFIG
 
 
-METRICAS_CONFIG = {
-	"ph": {"label": "pH", "unidade": ""},
-	"ec": {"label": "EC", "unidade": "mS/cm"},
-	"temperatura_ambiente": {"label": "Temperatura ambiente", "unidade": "C"},
-	"temperatura_agua": {"label": "Temperatura água", "unidade": "C"},
-	"luminosidade": {"label": "Luminosidade", "unidade": "h"},
-	"vazao": {"label": "Vazão", "unidade": "L/min"},
-	"nivel_tanque": {"label": "Nível do tanque", "unidade": "%"},
-	"umidade": {"label": "Umidade", "unidade": "%"},
-}
-
-
-def _to_float(valor):
-	if valor is None:
-		return None
-
-	try:
-		numero = float(valor)
-	except (TypeError, ValueError):
-		return None
-
-	if isnan(numero):
-		return None
-
-	return numero
-
-
-def _normalizar_limites(limites):
-	return DEFAULT_LIMITES if limites is None else limites
+MIN_AMOSTRAS_OPERACIONAL = 12
+PESO_CONSISTENCIA = 0.4
+PESO_FORCA = 0.3
+PESO_ESTABILIDADE = 0.2
+PESO_AMOSTRAS = 0.1
 
 
 def _tendencia_from_slope(slope, tolerancia=1e-6):
@@ -44,6 +20,15 @@ def _tendencia_from_slope(slope, tolerancia=1e-6):
 	if slope < -tolerancia:
 		return "Descendo"
 	return "Estável"
+
+
+def _suavizar_serie(serie):
+	n = len(serie)
+	if n < 3:
+		return serie
+
+	span = max(3, min(8, n // 6 if n >= 12 else 3))
+	return serie.ewm(span=span, adjust=False).mean()
 
 
 def _regressao_linear(tempos_horas, valores):
@@ -68,46 +53,54 @@ def _regressao_linear(tempos_horas, valores):
 	return slope, intercepto, r2
 
 
-def _confianca_projecao(qtd_amostras, r2):
-	fator_amostras = min(1.0, qtd_amostras / 12.0)
-	fator_r2 = min(1.0, max(0.0, r2))
-	confianca = (0.45 * fator_amostras + 0.55 * fator_r2) * 100
-	return round(confianca, 1)
+def _consistencia_direcional(deltas, direcao, tolerancia):
+	if not deltas:
+		return 0.0
+
+	sinais_validos = []
+	for delta in deltas:
+		if abs(delta) <= tolerancia:
+			continue
+		sinais_validos.append(1 if delta > 0 else -1)
+
+	if not sinais_validos or direcao == 0:
+		return 0.0
+
+	mesma_direcao = sum(1 for sinal in sinais_validos if sinal == direcao)
+	return round((mesma_direcao / len(sinais_validos)) * 100, 1)
 
 
-def _limite_relevante(valor_atual, slope, limite_min, limite_max):
-	if limite_min is None and limite_max is None:
-		return None, None
-
-	if limite_min is not None and valor_atual < limite_min:
-		return limite_min, "mínimo"
-
-	if limite_max is not None and valor_atual > limite_max:
-		return limite_max, "máximo"
-
-	if slope > 0 and limite_max is not None:
-		return limite_max, "máximo"
-
-	if slope < 0 and limite_min is not None:
-		return limite_min, "mínimo"
-
-	return None, None
+def _forca_tendencia(slope, valores_suavizados):
+	media = float(valores_suavizados.mean()) if len(valores_suavizados) else 0.0
+	desvio = float(valores_suavizados.std(ddof=0)) if len(valores_suavizados) > 1 else 0.0
+	escala = max(abs(media), desvio, 1e-6)
+	forca = min(100.0, abs(slope) / escala * 100.0)
+	return round(forca, 1)
 
 
-def _formatar_horas(valor):
-	if valor is None:
-		return "Sem previsão"
-	if valor < 1:
-		return "< 1 h"
-	return f"{valor:.1f} h"
+def _estabilidade(deltas, valores_suavizados):
+	if len(deltas) < 2:
+		return 100.0
+
+	media = float(valores_suavizados.mean()) if len(valores_suavizados) else 0.0
+	volatilidade = float(pd.Series(deltas).std(ddof=0)) if len(deltas) > 1 else 0.0
+	base = max(abs(media), 1e-6)
+	indice = min(1.0, volatilidade / base)
+	return round(max(0.0, 100.0 - (indice * 100.0)), 1)
 
 
-def _score_previsao(horas_ate_limite, horizonte_max_horas, confianca):
-	urgencia = max(0.0, 1.0 - (horas_ate_limite / max(horizonte_max_horas, 1e-6)))
-	return round(min(100.0, urgencia * 100.0 * (confianca / 100.0)), 1)
+def _score_operacional(consistencia, forca, estabilidade, qtd_amostras):
+	fator_amostras = min(100.0, (qtd_amostras / float(MIN_AMOSTRAS_OPERACIONAL)) * 100.0)
+	score = (
+		PESO_CONSISTENCIA * consistencia
+		+ PESO_FORCA * forca
+		+ PESO_ESTABILIDADE * estabilidade
+		+ PESO_AMOSTRAS * fator_amostras
+	)
+	return round(min(100.0, score), 1)
 
 
-def prever_estado(df, limites=None, min_amostras=8, horizonte_max_horas=24, janela_pontos=12):
+def prever_estado(df, limites=None, min_amostras=MIN_AMOSTRAS_OPERACIONAL, horizonte_max_horas=24, janela_pontos=120):
 	if df is None or df.empty:
 		return {
 			"status": "Sem dados",
@@ -117,7 +110,6 @@ def prever_estado(df, limites=None, min_amostras=8, horizonte_max_horas=24, jane
 			"previsoes": [],
 		}
 
-	limites = _normalizar_limites(limites)
 	dados = df.copy()
 	if "dth_recebido" not in dados.columns:
 		return {
@@ -149,49 +141,44 @@ def prever_estado(df, limites=None, min_amostras=8, horizonte_max_horas=24, jane
 
 		serie = pd.to_numeric(dados[metrica], errors="coerce")
 		base = pd.DataFrame({"dth_recebido": dados["dth_recebido"], "valor": serie}).dropna()
-		if len(base) < min_amostras:
+		n_amostras = len(base)
+		if n_amostras < max(min_amostras, MIN_AMOSTRAS_OPERACIONAL):
 			continue
 
 		base = base.sort_values("dth_recebido")
+		base["suavizado"] = _suavizar_serie(base["valor"])
+		valores_suavizados = base["suavizado"].astype(float).tolist()
+		if len(valores_suavizados) < 2:
+			continue
+
 		tempo_inicial = base["dth_recebido"].iloc[0]
 		tempos_horas = ((base["dth_recebido"] - tempo_inicial).dt.total_seconds() / 3600.0).tolist()
-		valores = base["valor"].astype(float).tolist()
-		ajuste = _regressao_linear(tempos_horas, valores)
+		ajuste = _regressao_linear(tempos_horas, valores_suavizados)
 		if ajuste is None:
 			continue
 
 		slope, intercepto, r2 = ajuste
-		valor_atual = float(valores[-1])
-		tempo_atual = float(tempos_horas[-1])
-		limite_min, limite_max = limites.get(metrica, (None, None))
-		limite_min = _to_float(limite_min)
-		limite_max = _to_float(limite_max)
-		limite_relevante, tipo_limite = _limite_relevante(valor_atual, slope, limite_min, limite_max)
-
-		if limite_relevante is None or abs(slope) <= 1e-9:
+		if abs(slope) <= 1e-9 and r2 < 0.1:
 			continue
 
-		hora_cruzamento = (limite_relevante - valor_atual) / slope
-		if hora_cruzamento < 0:
-			continue
-
-		horas_ate_limite = round(hora_cruzamento, 2)
-		if horas_ate_limite > horizonte_max_horas:
-			continue
-
-		confianca = _confianca_projecao(len(base), r2)
-		score = _score_previsao(horas_ate_limite, horizonte_max_horas, confianca)
-		valor_1h = intercepto + slope * (tempo_atual + 1.0)
-		valor_3h = intercepto + slope * (tempo_atual + 3.0)
+		valor_atual = float(base["valor"].iloc[-1])
+		valor_suavizado_atual = float(valores_suavizados[-1])
+		deltas = base["suavizado"].diff().dropna().tolist()
+		epsilon = max(1e-6, float(pd.Series(deltas).std(ddof=0)) * 0.15 if len(deltas) > 1 else 1e-6)
+		direcao = 1 if slope > epsilon else (-1 if slope < -epsilon else 0)
+		consistencia = _consistencia_direcional(deltas, direcao, epsilon)
+		forca = _forca_tendencia(slope, base["suavizado"])
+		estabilidade = _estabilidade(deltas, base["suavizado"])
+		confianca = round(min(100.0, 0.6 * consistencia + 0.4 * estabilidade), 1)
+		score = _score_operacional(consistencia, forca, estabilidade, n_amostras)
 		tendencia = _tendencia_from_slope(slope)
 		nome = config.get("label", metrica)
 		unidade = config.get("unidade", "")
 		sufixo_unidade = f" {unidade}" if unidade else ""
 
 		mensagem = (
-			f"{nome} pode atingir o limite {tipo_limite} em {_formatar_horas(horas_ate_limite)} "
-			f"se a tendência atual persistir."
-		)
+			f"{nome} em tendência de {tendencia.lower()} com base em série suavizada. "
+			f"Consistência: {consistencia:.1f}%, força: {forca:.1f}%, estabilidade: {estabilidade:.1f}%.")
 
 		previsoes.append(
 			{
@@ -199,21 +186,26 @@ def prever_estado(df, limites=None, min_amostras=8, horizonte_max_horas=24, jane
 				"nome": nome,
 				"tendencia": tendencia,
 				"valor_atual": round(valor_atual, 3),
+				"valor_suavizado": round(valor_suavizado_atual, 3),
 				"unidade": unidade,
-				"limite_tipo": tipo_limite,
-				"limite_valor": round(limite_relevante, 3),
-				"horas_ate_limite": horas_ate_limite,
-				"valor_previsto_1h": round(valor_1h, 3),
-				"valor_previsto_3h": round(valor_3h, 3),
+				"n_amostras": n_amostras,
 				"slope_hora": round(slope, 4),
 				"r2": round(r2, 3),
+				"consistencia": consistencia,
+				"forca": forca,
+				"estabilidade": estabilidade,
 				"confianca": confianca,
 				"score": score,
-				"mensagem": mensagem + (f" Valor atual: {valor_atual:.3f}{sufixo_unidade}." if sufixo_unidade else f" Valor atual: {valor_atual:.3f}.")
+				"mensagem": mensagem
+				+ (
+					f" Valor atual: {valor_atual:.3f}{sufixo_unidade}."
+					if sufixo_unidade
+					else f" Valor atual: {valor_atual:.3f}."
+				),
 			}
 		)
 
-	previsoes.sort(key=lambda item: (item["horas_ate_limite"], -item["score"]))
+	previsoes.sort(key=lambda item: (-item["score"], -item["consistencia"], -abs(item["slope_hora"])))
 	if previsoes:
 		principal = previsoes[0]
 		score_geral = round(max(item["score"] for item in previsoes), 1)
@@ -222,7 +214,10 @@ def prever_estado(df, limites=None, min_amostras=8, horizonte_max_horas=24, jane
 	else:
 		score_geral = 0.0
 		status = "Sem previsão"
-		resumo = "Nenhuma tendência confiável projetou cruzamento de limite dentro da janela analisada."
+		resumo = (
+			"Nenhuma tendência operacional confiável foi encontrada "
+			"na janela analisada."
+		)
 
 	return {
 		"status": status,
