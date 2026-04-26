@@ -123,3 +123,65 @@ def calcular_risco_estatistico(estatisticas, cultura=None):
 def score_para_status(score):
     return _status_from_score(to_float(score) or 0.0)
 
+
+def _normalizar_status(status):
+    if not status:
+        return "Sem dados"
+    if status == "Estável":
+        return "Saudável"
+    return status
+
+
+def calcular_status_consolidado(
+    risco_score,
+    anomalia_score,
+    tendencia_score,
+    risco_status=None,
+    anomalia_status=None,
+    tendencia_status=None,
+):
+    risco_score = to_float(risco_score) or 0.0
+    anomalia_score = to_float(anomalia_score) or 0.0
+    tendencia_score = to_float(tendencia_score) or 0.0
+
+    risco_status_norm = _normalizar_status(risco_status or score_para_status(risco_score))
+    anomalia_status_norm = _normalizar_status(anomalia_status or score_para_status(anomalia_score))
+    tendencia_status_norm = _normalizar_status(tendencia_status or score_para_status(tendencia_score))
+
+    score = max(risco_score, anomalia_score, tendencia_score)
+
+    if risco_score >= 67 or anomalia_score >= 85:
+        return {
+            "status": "Crítico",
+            "score": round(score, 1),
+            "motivo": "Risco atual elevado ou anomalia crítica detectada.",
+            "componentes": {
+                "risco": risco_status_norm,
+                "anomalia": anomalia_status_norm,
+                "tendencia": tendencia_status_norm,
+            },
+        }
+
+    if risco_score >= 34 or anomalia_score >= 60 or tendencia_score >= 67:
+        return {
+            "status": "Atenção",
+            "score": round(score, 1),
+            "motivo": "Algum indicador aponta atenção ou tendência de piora.",
+            "componentes": {
+                "risco": risco_status_norm,
+                "anomalia": anomalia_status_norm,
+                "tendencia": tendencia_status_norm,
+            },
+        }
+
+    return {
+        "status": "Saudável",
+        "score": round(score, 1),
+        "motivo": "Indicadores de risco, anomalia e tendência dentro do esperado.",
+        "componentes": {
+            "risco": risco_status_norm,
+            "anomalia": anomalia_status_norm,
+            "tendencia": tendencia_status_norm,
+        },
+    }
+
