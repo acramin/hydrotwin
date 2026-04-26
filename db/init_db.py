@@ -108,6 +108,13 @@ def create_tables():
         umidade_max REAL,
         umidade_mean REAL,
         score REAL,
+        anomalia_score REAL,
+        anomalia_status TEXT,
+        tendencia_score REAL,
+        tendencia_status TEXT,
+        consolidado_score REAL,
+        consolidado_status TEXT,
+        consolidado_motivo TEXT,
         n_amostras INTEGER,
         dth_calculado DATETIME DEFAULT (datetime('now', '-3 hours')),
         FOREIGN KEY (bancada_id) REFERENCES bancada(id)
