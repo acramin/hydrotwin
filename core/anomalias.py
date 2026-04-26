@@ -4,40 +4,8 @@ from math import isnan
 
 import pandas as pd
 
-from core.classificar import DEFAULT_LIMITES
-
-
-METRICAS_CONFIG = {
-	"ph": {"label": "pH", "unidade": ""},
-	"ec": {"label": "EC", "unidade": "mS/cm"},
-	"temperatura_ambiente": {"label": "Temperatura ambiente", "unidade": "C"},
-	"temperatura_agua": {"label": "Temperatura agua", "unidade": "C"},
-	"luminosidade": {"label": "Luminosidade", "unidade": "h"},
-	"vazao": {"label": "Vazao", "unidade": "L/min"},
-	"nivel_tanque": {"label": "Nivel do tanque", "unidade": "%"},
-	"umidade": {"label": "Umidade", "unidade": "%"},
-}
-
-
-def _to_float(valor):
-	if valor is None:
-		return None
-
-	try:
-		numero = float(valor)
-	except (TypeError, ValueError):
-		return None
-
-	if isnan(numero):
-		return None
-
-	return numero
-
-
-def _normalizar_limites(limites):
-	if limites is None:
-		return DEFAULT_LIMITES
-	return limites
+from utils import normalizar_limites, to_float
+from default import METRICAS_CONFIG
 
 
 def _status_from_score(score):
@@ -72,7 +40,7 @@ def _score_por_limite(valor_atual, limite_min, limite_max):
 	if limite_min is not None and valor_atual < limite_min:
 		distancia = (limite_min - valor_atual) / max(abs(limite_min), 1.0)
 		score = 70 + min(30, distancia * 100)
-		motivo = f"abaixo do limite minimo ({limite_min:.2f})"
+		motivo = f"abaixo do limite mínimo ({limite_min:.2f})"
 	elif limite_max is not None and valor_atual > limite_max:
 		distancia = (valor_atual - limite_max) / max(abs(limite_max), 1.0)
 		score = 70 + min(30, distancia * 100)
@@ -91,7 +59,7 @@ def detectar_anomalias(df, limites=None, min_amostras=12):
 			"detalhes": {},
 		}
 
-	limites = _normalizar_limites(limites)
+	limites = normalizar_limites(limites)
 
 	anomalias = []
 	detalhes = {}
@@ -107,8 +75,8 @@ def detectar_anomalias(df, limites=None, min_amostras=12):
 		quantidade = int(serie.count())
 		valor_atual = float(serie.iloc[-1])
 		limite_min, limite_max = limites.get(metrica, (None, None))
-		limite_min = _to_float(limite_min)
-		limite_max = _to_float(limite_max)
+		limite_min = to_float(limite_min)
+		limite_max = to_float(limite_max)
 
 		score_limite, motivo_limite = _score_por_limite(valor_atual, limite_min, limite_max)
 
