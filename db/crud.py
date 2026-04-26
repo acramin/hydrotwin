@@ -150,6 +150,21 @@ def _resolver_limites(cultura, metrica):
     return limite_min, limite_max
 
 
+def get_limites_bancada(bancada_id):
+    conn = _connect()
+    try:
+        cursor = conn.cursor()
+        cultura = _valor_cultura(cursor, bancada_id)
+
+        limites = {}
+        for metrica in DEFAULT_LIMITES:
+            limites[metrica] = _resolver_limites(cultura, metrica)
+
+        return limites
+    finally:
+        conn.close()
+
+
 def _explicacao_da_metrica(metrica, estatisticas, cultura):
     media = estatisticas.get(f"{metrica}_mean")
     limite_min, limite_max = _resolver_limites(cultura or {}, metrica)
