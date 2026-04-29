@@ -9,6 +9,10 @@ import sqlite3
 import pandas as pd
 import sys
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
@@ -25,8 +29,8 @@ from core.previsao import prever_estado
 DB_PATH = Path(__file__).resolve().with_name("hydroponic.db")
 
 USER_ROLES = ("admin", "viewer")
-DEFAULT_ADMIN_USERNAME = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
-DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+DEFAULT_ADMIN_USERNAME = os.getenv("DEFAULT_ADMIN_USERNAME")
+DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD")
 
 TIPOS_ALERTA_RISCO = ("RISCO_ATENCAO", "RISCO_CRITICO")
 

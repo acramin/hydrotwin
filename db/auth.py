@@ -1,6 +1,10 @@
 import streamlit as st
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from db.crud import autenticar_usuario, criar_usuario, ensure_default_admin
 
 SESSION_USER_KEY = os.getenv("SESSION_USER_KEY")
