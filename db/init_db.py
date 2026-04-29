@@ -1,6 +1,13 @@
 # Cria estrutura do banco de dados
+from pathlib import Path
 import sqlite3
-from crud import insert_culturas
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from db.crud import insert_culturas, ensure_default_admin
 
 # Deleta tudo
 def drop_tables():
@@ -13,6 +20,7 @@ def drop_tables():
     cursor.execute("DROP TABLE IF EXISTS cultura;")
     cursor.execute("DROP TABLE IF EXISTS sensor_proc;")
     cursor.execute("DROP TABLE IF EXISTS alerta;")
+    cursor.execute("DROP TABLE IF EXISTS usuario;")
     
     conn.commit()
     conn.close()
@@ -133,6 +141,16 @@ def create_tables():
         FOREIGN KEY (bancada_id) REFERENCES bancada(id)
     );
     """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS usuario (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN ('admin', 'viewer')),
+        created_at DATETIME DEFAULT (datetime('now', '-3 hours'))
+    );
+    """)
     
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_raw_bancada_tempo ON sensor_raw(bancada_id, dth_recebido);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_raw_tempo ON sensor_raw(dth_recebido);")
@@ -156,6 +174,9 @@ print("Tabelas deletadas (se existiam).")
 create_tables()
 
 print("Banco criado com sucesso!")
+
+ensure_default_admin()
+print("Usuário admin garantido!")
 
 insert_culturas()
 print("Culturas inseridas!")

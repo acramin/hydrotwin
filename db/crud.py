@@ -1,5 +1,10 @@
 from datetime import datetime, timedelta, date
 from pathlib import Path
+import base64
+import hashlib
+import hmac
+import os
+import secrets
 import sqlite3
 import pandas as pd
 import sys
@@ -19,6 +24,10 @@ from core.previsao import prever_estado
 
 DB_PATH = Path(__file__).resolve().with_name("hydroponic.db")
 
+USER_ROLES = ("admin", "viewer")
+DEFAULT_ADMIN_USERNAME = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
+DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+
 TIPOS_ALERTA_RISCO = ("RISCO_ATENCAO", "RISCO_CRITICO")
 
 ROTULO_METRICA = {
@@ -31,6 +40,120 @@ ROTULO_METRICA = {
     "nivel_tanque": "Nivel do tanque",
     "umidade": "Umidade",
 }
+
+
+def _hash_password(password, salt=None):
+    salt = salt or secrets.token_bytes(16)
+    password_bytes = password.encode("utf-8")
+    hash_bytes = hashlib.pbkdf2_hmac("sha256", password_bytes, salt, 120_000)
+    return f"{base64.b64encode(salt).decode('ascii')}${base64.b64encode(hash_bytes).decode('ascii')}"
+
+
+def _verify_password(password, password_hash):
+    try:
+        salt_b64, hash_b64 = password_hash.split("$", 1)
+        salt = base64.b64decode(salt_b64)
+        expected_hash = base64.b64decode(hash_b64)
+    except (ValueError, TypeError, base64.binascii.Error):
+        return False
+
+    candidate_hash = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt,
+        120_000,
+    )
+    return hmac.compare_digest(candidate_hash, expected_hash)
+
+
+def criar_usuario(username, password, role="viewer"):
+    if role not in USER_ROLES:
+        raise ValueError("Role inválida.")
+
+    conn = _connect()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO usuario (username, password_hash, role)
+            VALUES (?, ?, ?)
+            """,
+            (username.strip(), _hash_password(password), role),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+
+def obter_usuario_por_username(username):
+
+    conn = _connect()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, password_hash, role
+            FROM usuario
+            WHERE username = ?
+            """,
+            (username.strip(),),
+        )
+        linha = cursor.fetchone()
+        if linha is None:
+            return None
+
+        return {
+            "id": linha[0],
+            "username": linha[1],
+            "password_hash": linha[2],
+            "role": linha[3],
+        }
+    finally:
+        conn.close()
+
+
+def autenticar_usuario(username, password):
+    usuario = obter_usuario_por_username(username)
+    if usuario is None:
+        return None
+
+    if not _verify_password(password, usuario["password_hash"]):
+        return None
+
+    return {
+        "id": usuario["id"],
+        "username": usuario["username"],
+        "role": usuario["role"],
+    }
+
+
+def ensure_default_admin():
+
+    conn = _connect()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id
+            FROM usuario
+            WHERE role = 'admin'
+            LIMIT 1
+            """
+        )
+        if cursor.fetchone() is not None:
+            return
+
+        cursor.execute(
+            """
+            INSERT INTO usuario (username, password_hash, role)
+            VALUES (?, ?, 'admin')
+            """,
+            (DEFAULT_ADMIN_USERNAME, _hash_password(DEFAULT_ADMIN_PASSWORD)),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 def _connect():
     return sqlite3.connect(DB_PATH)
