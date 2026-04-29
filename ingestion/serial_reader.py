@@ -28,8 +28,10 @@ bancadas_lock = threading.Lock()
 stop_event = threading.Event()
 
 # ================= DB =================
+DB_PATH = ROOT_DIR / "db" / "hydroponic.db"
+
 def conectar_db():
-    return sqlite3.connect("db\\hydroponic.db", check_same_thread=False)
+    return sqlite3.connect(str(DB_PATH), check_same_thread=False)
 
 def db_writer():
     conn = conectar_db()
