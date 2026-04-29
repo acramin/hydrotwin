@@ -77,7 +77,7 @@ Filete: filete_bancada
 
 - O dashboard agora exige login para navegar nas páginas.
 - Novos cadastros entram com role `viewer` e conseguem acessar as páginas de visão geral, monitoramento detalhado e FAQ.
-- O usuário `master` com role `admin` é o único com acesso à página de cadastro de bancadas.
+- O usuário `admin` com role `admin` é o único com acesso à página de cadastro de bancadas.
 - A senha inicial do master vem de `HYDROTWIN_ADMIN_PASSWORD`; se a variável não estiver definida, o padrão é `admin123`.
 
 ### Classificação
