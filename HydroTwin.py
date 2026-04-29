@@ -1,5 +1,5 @@
 import streamlit as st
-from simulator.simulator import simular_dados, parar_simulacao
+from simulator.simulator_port import simular_dados, parar_simulacao
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
 
