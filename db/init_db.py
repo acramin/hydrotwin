@@ -35,8 +35,6 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS bancada (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,
-        cultura_id INTEGER,
-        FOREIGN KEY (cultura_id) REFERENCES cultura(id)
     );
     """)
 
@@ -45,9 +43,11 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS filete (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         bancada_id INTEGER NOT NULL,
+        cultura_id INTEGER NOT NULL,
         data_plantio DATE NOT NULL,
         prevista_colheita DATE NOT NULL,
-        FOREIGN KEY (bancada_id) REFERENCES bancada(id)
+        FOREIGN KEY (bancada_id) REFERENCES bancada(id),
+        FOREIGN KEY (cultura_id) REFERENCES cultura(id)
     );
     """)
 
