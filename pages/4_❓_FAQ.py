@@ -11,11 +11,14 @@ st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="�
 st.title("❓ FAQ")
 st.caption("Resumo das funcionalidades do HydroTwin e guia rápido de interpretação das informações exibidas nas demais páginas.")
 
+
 st.markdown(
 	"""
 	O HydroTwin foi pensado para centralizar o cadastro, o acompanhamento e a leitura operacional de bancadas hidropônicas.
 	A plataforma organiza os dados coletados pelos sensores, calcula indicadores consolidados e destaca alertas, anomalias e tendências
 	para facilitar a tomada de decisão.
+
+	O acesso é controlado por login: novos usuários são cadastrados como `viewer` e o usuário `admin` com role `admin` é o único que pode cadastrar bancadas.
 	"""
 )
 
