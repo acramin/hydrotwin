@@ -1,7 +1,11 @@
 # Cria estrutura do banco de dados
+import os
 from pathlib import Path
 import sqlite3
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -9,9 +13,12 @@ if str(ROOT_DIR) not in sys.path:
 
 from db.crud import insert_culturas, ensure_default_admin
 
+# Caminho do banco de dados
+DB_PATH = ROOT_DIR / "db" / "hydroponic.db"
+
 # Deleta tudo
 def drop_tables():
-    conn = sqlite3.connect("db\\hydroponic.db")
+    conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     
     cursor.execute("DROP TABLE IF EXISTS sensor_raw;")
@@ -27,7 +34,7 @@ def drop_tables():
 
 # Cria todas tabelas e indexes
 def create_tables():
-    conn = sqlite3.connect("db\\hydroponic.db")
+    conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     
     # Tabela de bancada
@@ -166,17 +173,21 @@ def create_tables():
     conn.commit()
     conn.close()
 
+if __name__ == "__main__":
+    env_mode = os.getenv("ENV_MODE")
+    
+    print(f"Modo atual: {env_mode}")
+    
+    if env_mode == "PRODUCTION":
+        print("Modo de produção detectado. O banco de dados não será reinicializado para evitar perda de dados.")
+        sys.exit(0)
 
-drop_tables()
-
-print("Tabelas deletadas (se existiam).")
-
-create_tables()
-
-print("Banco criado com sucesso!")
-
-ensure_default_admin()
-print("Usuário admin garantido!")
-
-insert_culturas()
-print("Culturas inseridas!")
+    else: 
+        drop_tables()
+        print("Tabelas deletadas (se existiam).")
+        create_tables()
+        print("Banco criado com sucesso!")
+        ensure_default_admin()
+        print("Usuário admin garantido!")
+        insert_culturas()
+        print("Culturas inseridas!")
