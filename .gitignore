@@ -1,6 +1,7 @@
 */teste.py
 .vscode/
 */hydroponic.db
+.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
