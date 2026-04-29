@@ -168,13 +168,16 @@ def _query_dataframe(query, params=None):
 
 
 def _valor_cultura(cursor, bancada_id):
+    """Retorna os parâmetros da cultura do filete mais recente da bancada"""
     cursor.execute(
         """
         SELECT c.id, c.nome, c.ph_min, c.ph_max, c.ec_min, c.ec_max,
                c.temp_agua_min, c.temp_agua_max, c.luminosidade_min, c.dias_ciclo
-        FROM bancada b
-        LEFT JOIN cultura c ON c.id = b.cultura_id
-        WHERE b.id = ?
+        FROM filete f
+        LEFT JOIN cultura c ON c.id = f.cultura_id
+        WHERE f.bancada_id = ?
+        ORDER BY f.id DESC
+        LIMIT 1
         """,
         (bancada_id,),
     )
@@ -504,12 +507,14 @@ def get_culturas():
 
 
 def inserir_filete(bancada_id, cultura_id, data_inicio):
+    """Insere um novo filete com cultura específica"""
     conn = _connect()
     cursor = conn.cursor()
     
     # pegar ciclo da cultura
     cursor.execute("SELECT dias_ciclo FROM cultura WHERE id = ?", (cultura_id,))
-    ciclo = cursor.fetchone()[0]
+    resultado = cursor.fetchone()
+    ciclo = resultado[0] if resultado else None
     
     if ciclo is None:
         ciclo = 45  # valor padrão caso não esteja definido
@@ -518,27 +523,27 @@ def inserir_filete(bancada_id, cultura_id, data_inicio):
     colheita = data_inicio_dt + timedelta(days=ciclo)
 
     cursor.execute("""
-        INSERT INTO filete (bancada_id, data_plantio, prevista_colheita)
-        VALUES (?, ?, ?)
-    """, (bancada_id, data_inicio, colheita.strftime("%Y-%m-%d")))
+        INSERT INTO filete (bancada_id, cultura_id, data_plantio, prevista_colheita)
+        VALUES (?, ?, ?, ?)
+    """, (bancada_id, cultura_id, data_inicio, colheita.strftime("%Y-%m-%d")))
     
+    filete_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    return filete_id
 
 
-def inserir_bancada(nome, cultura_id):
+def inserir_bancada(nome):
+    """Insere uma nova bancada (sem cultura_id, que fica no filete)"""
     conn = _connect()
     cursor = conn.cursor()
     
     cursor.execute("""
-        INSERT INTO bancada (nome, cultura_id)
-        VALUES (?, ?)
-    """, (nome, cultura_id))
+        INSERT INTO bancada (nome)
+        VALUES (?)
+    """, (nome,))
     
-    # print("Bancada inserida, agora pegando ID...")
-    cursor.execute("SELECT last_insert_rowid()")
-    bancada_id = cursor.fetchone()[0]
-    # print(f"ID da bancada: {bancada_id}")
+    bancada_id = cursor.lastrowid
 
     conn.commit()
     conn.close()
@@ -546,30 +551,64 @@ def inserir_bancada(nome, cultura_id):
 
 
 def get_bancadas():
+    """Retorna lista de bancadas com seus filetes e culturas"""
     conn = _connect()
     cursor = conn.cursor()
     
+    # Pega a bancada e o último filete com sua cultura
     cursor.execute("""
-        SELECT b.id, b.nome, c.nome, f.data_plantio, f.prevista_colheita
+        SELECT b.id, b.nome, c.nome, f.id, f.data_plantio, f.prevista_colheita
         FROM bancada b
-        LEFT JOIN cultura c ON b.cultura_id = c.id
         LEFT JOIN (
             SELECT f1.*
             FROM filete f1
-            INNER JOIN (
-                SELECT bancada_id, MAX(id) AS max_id
-                FROM filete
-                GROUP BY bancada_id
-            ) ultimo ON ultimo.max_id = f1.id
+            WHERE f1.id = (
+                SELECT MAX(id) FROM filete WHERE bancada_id = f1.bancada_id
+            )
         ) f ON f.bancada_id = b.id
-        ORDER BY b.id
+        LEFT JOIN cultura c ON f.cultura_id = c.id
+        ORDER BY b.id DESC
     """)
 
     dados = cursor.fetchall()
     
-    conn.commit()
     conn.close()
     return dados
+
+
+def get_filetes_by_bancada(bancada_id):
+    """Retorna todos os filetes de uma bancada com suas informações de cultura"""
+    conn = _connect()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT f.id, f.bancada_id, c.id, c.nome, f.data_plantio, f.prevista_colheita
+        FROM filete f
+        LEFT JOIN cultura c ON f.cultura_id = c.id
+        WHERE f.bancada_id = ?
+        ORDER BY f.data_plantio DESC
+    """, (bancada_id,))
+    
+    dados = cursor.fetchall()
+    conn.close()
+    return dados
+
+
+def get_filete_info(filete_id):
+    """Retorna informações detalhadas de um filete específico"""
+    conn = _connect()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT f.id, f.bancada_id, c.id, c.nome, f.data_plantio, f.prevista_colheita
+        FROM filete f
+        LEFT JOIN cultura c ON f.cultura_id = c.id
+        WHERE f.id = ?
+    """, (filete_id,))
+    
+    resultado = cursor.fetchone()
+    conn.close()
+    return resultado
 
 
 def get_raw_recent(bancada_id=None, horas=24):
