@@ -13,15 +13,15 @@ Escolha de dashboard: Streamlit - roda local e pode ser hospedado na web eventua
 ## Arquitetura
 
 [Sensores]
-     ↓
+↓
 [Arduino Mega]
-     ↓ (Serial USB)
+↓ (Serial USB)
 [Raspberry Pi 4]
-     ↓
+↓
 [Script Python]
-     ↓
+↓
 [SQLite]
-     ↓
+↓
 [Streamlit Dashboard]
 
 Comunicação Serial Pura --> csv ou vetor
@@ -73,6 +73,13 @@ Filete: filete_bancada
 
 ## Lógicas Implementadas
 
+## Controle de acesso
+
+- O dashboard agora exige login para navegar nas páginas.
+- Novos cadastros entram com role `viewer` e conseguem acessar as páginas de visão geral, monitoramento detalhado e FAQ.
+- O usuário `master` com role `admin` é o único com acesso à página de cadastro de bancadas.
+- A senha inicial do master vem de `HYDROTWIN_ADMIN_PASSWORD`; se a variável não estiver definida, o padrão é `admin123`.
+
 ### Classificação
 
 Aqui a ideia foi classificar o estado da bancada em 3 possíveis status:
@@ -87,7 +94,7 @@ Tem seu próprio arquivo de lógica, mas a interação com o banco está toda no
 
 ### Alerta
 
-É criado toda vez que o status é "Atenção" ou "Crítico".  Fica armazenado na tabela de alertas e é exibida para o usuário na Visão Geral.
+É criado toda vez que o status é "Atenção" ou "Crítico". Fica armazenado na tabela de alertas e é exibida para o usuário na Visão Geral.
 
 Não tem seu próprio arquivo de lógica, está tudo no crud, sincronizado com o crud de Classifiicação.
 
