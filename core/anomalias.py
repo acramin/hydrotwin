@@ -4,8 +4,8 @@ from math import isnan
 
 import pandas as pd
 
-from utils import normalizar_limites, to_float
-from default import METRICAS_CONFIG
+from others.utils import normalizar_limites, to_float
+from others.default import METRICAS_CONFIG
 
 
 def _status_from_score(score):

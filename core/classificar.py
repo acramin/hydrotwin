@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from math import isnan
 
-from utils import to_float
-from default import DEFAULT_LIMITES
+from others.utils import to_float
+from others.default import DEFAULT_LIMITES
 
 PESOS_PADRAO = {
     "ph": 0.24,

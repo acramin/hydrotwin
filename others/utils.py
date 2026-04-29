@@ -1,6 +1,6 @@
 from math import isnan
 
-from default import DEFAULT_LIMITES
+from others.default import DEFAULT_LIMITES
 
 # utils para normalização e conversão de dados
 def to_float(valor):

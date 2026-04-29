@@ -7,7 +7,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import *
-from utils import formatar_data
+from others.utils import formatar_data
 
 def get_last_status():
     status = {}

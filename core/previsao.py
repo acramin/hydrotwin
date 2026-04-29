@@ -4,7 +4,7 @@ import pandas as pd
 
 from core.classificar import score_para_status
 
-from default import METRICAS_CONFIG
+from others.default import METRICAS_CONFIG
 
 
 MIN_AMOSTRAS_OPERACIONAL = 12
