@@ -4,6 +4,16 @@ import random
 import time
 import threading
 
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+
+from db.crud import get_bancadas
+
 PORTA = 'COM10'
 BAUD_RATE = 9600
 INTERVALO_GERACAO_S = 0.5
@@ -22,7 +32,7 @@ def _inicializar_estado(bancada_id):
         "ec": random.uniform(1.0, 1.5),
         "temp_ar": random.uniform(20, 26),
         "temp_agua": random.uniform(18, 24),
-        "luz": random.uniform(10, 14),   # ajustado (antes tava 10–14)
+        "luz": random.uniform(10, 14),
         "vazao": random.uniform(900, 1100),
         "nivel": random.uniform(24, 28),
         "umidade": random.uniform(55, 65),
@@ -86,10 +96,10 @@ def _loop_simulacao():
 
     try:
         while not controle_event.is_set():
-            for bancada_id in range(1, 3):
+            for bancada in get_bancadas():
                 if controle_event.is_set():
                     break
-
+                bancada_id = bancada[0]
                 linha = _gerar_linha_serial(bancada_id)
 
                 try:
