@@ -1,11 +1,21 @@
 import streamlit as st
 from datetime import date
+from pathlib import Path
+import sys
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from db.auth import render_auth_gate, require_role
 from db.crud import get_bancadas, get_culturas, inserir_bancada, inserir_filete
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide")
 
 st.title("🌱 HydroTwin")
+
+usuario = render_auth_gate("HydroTwin")
+require_role(usuario, "admin", "A página de cadastro de bancadas é restrita ao usuário com permissão de admin.")
 
 # =========================
 # 🌿 CADASTRO

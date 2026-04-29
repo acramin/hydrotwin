@@ -8,6 +8,8 @@ if str(ROOT_DIR) not in sys.path:
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
 
+from db.auth import render_auth_gate
+
 from core.visao_geral import *
 
 # =========================
@@ -15,6 +17,8 @@ from core.visao_geral import *
 # =========================
 
 st.title("📊 Visão Geral")
+
+render_auth_gate("HydroTwin")
 
 status = get_last_status()
 

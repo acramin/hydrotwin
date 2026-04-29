@@ -7,6 +7,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import get_bancadas
+from db.auth import render_auth_gate
 from core.monitoramento_detalhado import (
     carregar_monitoramento_bancada,
     montar_df_anomalias,
@@ -26,6 +27,8 @@ st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="ðŸ
 # =========================
 
 st.title("ðŸ”¬ Monitoramento Detalhado")
+
+render_auth_gate("HydroTwin")
 
 rows = get_bancadas()
 
