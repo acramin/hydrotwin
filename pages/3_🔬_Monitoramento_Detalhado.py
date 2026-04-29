@@ -18,7 +18,7 @@ from core.monitoramento_detalhado import (
     render_legenda_zonas,
     VARIAVEIS_ZONA_FORTES,
 )
-from utils import formatar_data
+from others.utils import formatar_data
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
 
@@ -28,12 +28,16 @@ st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="�
 
 st.title("🔬 Monitoramento Detalhado")
 
-render_auth_gate("HydroTwin")
+usuario = render_auth_gate("HydroTwin")
 
 rows = get_bancadas()
 
-if not rows:
-    st.info("Cadastre uma bancada para começar a gerar status e históricos.")
+if not rows and usuario["role"] == "admin":
+    st.info("Cadastre uma bancada para acessar o monitoramento detalhado.")
+    st.stop()
+    
+if not rows and usuario["role"] == "viewer":
+    st.info("Aguarde até que admin cadastre uma bancada para acessar o monitoramento detalhado.")
     st.stop()
 
 mapa_bancadas = {nome: bancada_id for bancada_id, nome, *_ in rows}

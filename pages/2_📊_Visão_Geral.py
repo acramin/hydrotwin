@@ -8,7 +8,7 @@ if str(ROOT_DIR) not in sys.path:
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
 
-from db.auth import render_auth_gate
+from db.auth import render_auth_gate, require_role
 
 from core.visao_geral import *
 
@@ -18,14 +18,18 @@ from core.visao_geral import *
 
 st.title("📊 Visão Geral")
 
-render_auth_gate("HydroTwin")
+usuario = render_auth_gate("HydroTwin")
 
 status = get_last_status()
 
 # print("Status:", status)
 
-if len(status) == 0:
-    st.info("Cadastre uma bancada para começar a gerar status e históricos.")
+if len(status) == 0 and usuario["role"] == "admin":
+    st.info("Cadastre uma bancada para acessar a visão geral.")
+    st.stop()
+
+if len(status) == 0 and usuario["role"] == "viewer":
+    st.info("Aguarde até que admin cadastre uma bancada para acessar a visão geral.")
     st.stop()
 
 st.caption(f"Status atual das bancadas, indicadores rápidos e alertas ativos. Última atualização: {status.get('atualizado_em', 'N/A')}")
