@@ -42,6 +42,9 @@ status.pop("atualizado_em", None)  # Remove o timestamp do status para exibir s�
 if not status:
     st.info("Nenhuma bancada cadastrada ainda.")
 else:
+    bancadas = list(status.keys())
+    bancadas.sort()  # Ordenar alfabeticamente
+    status = {b: status[b] for b in bancadas}  # Reordenar o dicionário com as bancadas ordenadas
     colunas = st.columns(min(4, len(status)))
     for i, (b, s) in enumerate(status.items()):
         emoji = "⚪" if s == "Sem dados" else "🟢" if "Saudável" in s else "🟡" if "Atenção" in s else "🔴" 
@@ -50,7 +53,7 @@ else:
 # KPIs
 st.subheader("Indicadores Gerais")
 
-for bancada_id, nome, *_ in get_bancadas():
+for bancada_id, nome, *_ in sorted(get_bancadas(), key=lambda x: x[0]):
     kpis = get_kpis(bancada_id, nome)
     
     if len(kpis.get(nome, {})) == 0:

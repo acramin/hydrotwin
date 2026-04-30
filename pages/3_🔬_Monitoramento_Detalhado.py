@@ -41,7 +41,7 @@ if not rows and usuario["role"] == "viewer":
     st.stop()
 
 mapa_bancadas = {nome: bancada_id for bancada_id, nome, *_ in rows}
-bancada = st.selectbox("Selecione a bancada", list(mapa_bancadas.keys()))
+bancada = st.selectbox("Selecione a bancada", sorted(list(mapa_bancadas.keys())))
 bancada_id = mapa_bancadas[bancada]
 
 dados = carregar_monitoramento_bancada(bancada_id=bancada_id, horas=24)

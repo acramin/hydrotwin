@@ -31,6 +31,7 @@ with tab1:
     if not bancadas:
         st.info("Nenhuma bancada cadastrada ainda. Crie uma nova bancada para começar!")
     else:
+        bancadas.sort(key=lambda x: x[0])  # Ordenar por ID da bancada
         for bancada_id, nome_bancada, cultura_nome, filete_id, data_plantio, data_colheita in bancadas:
             with st.expander(f"🌿 {nome_bancada}", expanded=False):
                 col1, col2 = st.columns([3, 1])
@@ -43,6 +44,7 @@ with tab1:
                     
                     st.markdown("**Filetes Ativas:**")
                     if filetes:
+                        filetes.sort(key=lambda x: x[0])  # Ordenar por ID do filete
                         for f_id, f_bancada_id, cultura_id, cultura_nome_f, data_plant, data_colh in filetes:
                             col_f1, col_f2, col_f3 = st.columns(3)
                             with col_f1:
