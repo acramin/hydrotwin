@@ -55,7 +55,7 @@ st.subheader("Perguntas rápidas")
 with st.expander("Como cadastrar uma bancada?"):
 	st.write(
 		"Na página **Cadastrar Bancada**, informe o nome da bancada, selecione a cultura e defina a data de início. "
-		"Se a bancada já existir, o sistema cria um novo filete para a data escolhida."
+		"Se a bancada já existir, escolha-a e adicione mais filetes."
 	)
 
 with st.expander("O que vejo na página Visão Geral?"):
@@ -146,5 +146,5 @@ st.markdown(
 )
 
 st.info(
-	"Se quiser, esta página também pode ser expandida com imagens, fluxograma do sistema e uma seção de exemplos reais de leitura para cada sensor."
+	"Para mais informações e documentação do projeto acesse o repositório oficial: [HydroTwin Documentation](https://github.com/acramin/hydrotwin)"
 )
