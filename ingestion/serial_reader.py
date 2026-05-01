@@ -4,6 +4,10 @@ from datetime import datetime
 import time
 import threading
 from queue import Queue
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import sys
 from pathlib import Path
@@ -28,7 +32,8 @@ bancadas_lock = threading.Lock()
 stop_event = threading.Event()
 
 # ================= DB =================
-DB_PATH = ROOT_DIR / "db" / "hydroponic.db"
+DB_NAME = os.getenv("DB_NAME", "hydroponic_teste.db")
+DB_PATH = ROOT_DIR / "db" / DB_NAME
 
 def conectar_db():
     return sqlite3.connect(str(DB_PATH), check_same_thread=False)

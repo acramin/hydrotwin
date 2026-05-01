@@ -17,7 +17,7 @@ from db.crud import insert_culturas, ensure_default_admin
 DB_PATH = ROOT_DIR / "db" / "hydroponic.db"
 
 # Deleta tudo
-def drop_tables():
+def drop_tables(DB_PATH=DB_PATH):
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     
@@ -33,7 +33,7 @@ def drop_tables():
     conn.close()
 
 # Cria todas tabelas e indexes
-def create_tables():
+def create_tables(DB_PATH=DB_PATH):
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
     

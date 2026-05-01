@@ -8,12 +8,25 @@ load_dotenv()
 from db.crud import autenticar_usuario, criar_usuario, ensure_default_admin
 
 SESSION_USER_KEY = os.getenv("SESSION_USER_KEY")
+ENV_MODE = os.getenv("ENV_MODE", "PRODUCTION")
 
 def bootstrap_auth():
     ensure_default_admin()
 
     if SESSION_USER_KEY not in st.session_state:
         st.session_state[SESSION_USER_KEY] = None
+    
+    # Em modo DEVELOPMENT, fazer login automático como admin se não houver usuário logado
+    if ENV_MODE == "DEVELOPMENT" and st.session_state[SESSION_USER_KEY] is None:
+        try:
+            usuario = autenticar_usuario(
+                os.getenv("DEFAULT_ADMIN_USERNAME"),
+                os.getenv("DEFAULT_ADMIN_PASSWORD")
+            )
+            if usuario:
+                st.session_state[SESSION_USER_KEY] = usuario
+        except Exception:
+            pass  # Se falhar, continua sem login automático
 
 
 def get_current_user():
