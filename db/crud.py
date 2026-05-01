@@ -3,15 +3,10 @@ from pathlib import Path
 import base64
 import hashlib
 import hmac
-import os
 import secrets
 import sqlite3
 import pandas as pd
 import sys
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -26,14 +21,14 @@ from core.classificar import (
 from core.anomalias import detectar_anomalias
 from core.previsao import prever_estado
 
-from others.env import get_db_name
+from others.env import get_db_name, get_admin_credentials
 
 DB_NAME = get_db_name()
 DB_PATH = ROOT_DIR / "db" / DB_NAME
 
 USER_ROLES = ("admin", "viewer")
-DEFAULT_ADMIN_USERNAME = os.getenv("DEFAULT_ADMIN_USERNAME")
-DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD")
+DEFAULT_ADMIN_USERNAME = get_admin_credentials()[0]
+DEFAULT_ADMIN_PASSWORD = get_admin_credentials()[1]
 
 TIPOS_ALERTA_RISCO = ("RISCO_ATENCAO", "RISCO_CRITICO")
 

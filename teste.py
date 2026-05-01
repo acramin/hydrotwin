@@ -1,10 +1,6 @@
 import sys
 from pathlib import Path
-import os
 import time
-from dotenv import load_dotenv
-
-load_dotenv()
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -22,7 +18,7 @@ from db.crud import inserir_bancada, inserir_filete, ensure_default_admin, inser
 from db.init_db import drop_tables, create_tables
 from simulator.simulator_port import simular_dados, parar_simulacao
 from others.env import is_development_mode
-    
+
 if __name__ == "__main__":
     print("Iniciando teste...")
     

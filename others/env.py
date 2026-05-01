@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 ENV_MODE_DEVELOPMENT = "DEVELOPMENT"
 ENV_MODE_PRODUCTION = "PRODUCTION"
@@ -37,3 +37,12 @@ def get_db_name():
     else:
         print(f"✅ Modo de produção detectado. Usando banco de dados '{DB_NAME_PRODUCTION}'.")
         return DB_NAME_PRODUCTION
+    
+def get_admin_credentials():
+    return (
+        os.getenv("DEFAULT_ADMIN_USERNAME"),
+        os.getenv("DEFAULT_ADMIN_PASSWORD")
+    )
+    
+def user_session_key():
+    return os.getenv("SESSION_USER_KEY")
