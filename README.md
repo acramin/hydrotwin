@@ -127,3 +127,17 @@ Tem seu prórpio arquivo de lógica, não possui tabela no banco que guarde essa
 - Lógica de risco
 - Lógica de anomalia
 - Lógica de tendência
+
+## Como rodar
+
+cheque as variáveis de ambiente: se estiver rodando para testes set ENV_MODE=DEVELOPMENT; se for em produção set ENV_MODE=PRODUCTION
+
+rode init_db.py uma vez para produção (restrição para rodar uma única vez) ou quantas vezes quiser em desenvolvimento (reseta o banco toda vez)
+
+ligue seu leitor serial independente do ENV_MODE; python serial_reader.py
+
+ligue seu front end streamlit; streamlit run app.py
+
+para testar por script fechado basta rodar teste.py
+
+para testar manualmente, cadestre as bancadas e filetes e rode o arquivo simulator_port.py pelo tempo que quiser >> se script pode ser rodado direto no terminal ou com o login de admin pelo proprio app na aba de simulador

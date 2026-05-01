@@ -45,7 +45,7 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bancada (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL
+        nome TEXT NOT NULL UNIQUE
     );
     """)
 

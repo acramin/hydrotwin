@@ -122,6 +122,34 @@ with tab1:
 # TAB 2: CRIAR NOVA BANCADA
 # =========================
 with tab2:
+    import time
+    if "salvando_bancada" not in st.session_state:
+        st.session_state.salvando_bancada = False
+    if "nova_bancada_pendente" not in st.session_state:
+        st.session_state.nova_bancada_pendente = None
+    if "reset_form" not in st.session_state:
+        st.session_state.reset_form = False
+    if "nome_bancada_nova" not in st.session_state:
+        st.session_state.nome_bancada_nova = ""
+    if "cultura_primeira_bancada" not in st.session_state:
+        st.session_state.cultura_primeira_bancada = 0
+    if "data_primeira_bancada" not in st.session_state:
+        st.session_state.data_primeira_bancada = date.today()
+        
+    if st.session_state.reset_form:
+        st.session_state.nome_bancada_nova = ""
+        st.session_state.cultura_primeira_bancada = 0
+        st.session_state.data_primeira_bancada = date.today()
+        st.session_state.reset_form = False
+
+    def iniciar_salvamento_bancada():
+        st.session_state.nova_bancada_pendente = {
+            "nome_bancada": st.session_state.nome_bancada_nova,
+            "cultura_nome": st.session_state.cultura_primeira_bancada,
+            "data_inicio": st.session_state.data_primeira_bancada,
+        }
+        st.session_state.salvando_bancada = True
+    
     st.header("Cadastrar Nova Bancada", help="Crie uma nova bancada com seu primeiro filete")
     
     st.markdown("""
@@ -132,91 +160,113 @@ with tab2:
     """)
     
     st.markdown("---")
-    
-    # Seção 1: Dados da Bancada
-    st.subheader("1️⃣ Informações da Bancada")
-    nome_bancada = st.text_input(
-        "Nome da Bancada",
-        key="nome_bancada_nova",
-        help="Ex: Bancada 1, Setor A, etc."
-    )
-    
-    # Seção 2: Primeiro Filete (obrigatório)
-    st.subheader("2️⃣ Primeiro Filete (Obrigatório)")
-    
-    culturas = get_culturas()
-    cultura_dict = {c[1]: c[0] for c in culturas}
-    opcoes_cultura = ["Selecione a cultura"] + list(cultura_dict.keys())
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        cultura_nome = st.selectbox(
-            "Cultura",
-            opcoes_cultura,
-            index=0,
-            key="cultura_primeira_bancada",
-            help="Selecione a cultura para o primeiro filete"
-        )
-    
-    with col2:
-        data_inicio = st.date_input(
-            "Data de Plantio",
-            value=date.today(),
-            format="DD/MM/YYYY",
-            key="data_primeira_bancada",
-            help="Data de início do cultivo"
-        )
-    
-    # Botão de Salvar
-    st.markdown("---")
-    
-    col_submit, col_empty = st.columns([1, 4])
-    
-    with col_submit:
-        if st.button("💾 Cadastrar Bancada", type="primary", use_container_width=True):
-            # Validações
-            if not nome_bancada:
-                st.error("❌ Digite um nome para a bancada.")
-                st.stop()
-            
-            if cultura_nome == "Selecione a cultura":
-                st.error("❌ Selecione uma cultura para o primeiro filete.")
-                st.stop()
-            
-            if not data_inicio:
-                st.error("❌ Selecione uma data de plantio.")
-                st.stop()
-            
-            try:
-                # Inserir bancada
-                cultura_id = cultura_dict[cultura_nome]
-                bancada_id = inserir_bancada(nome_bancada)
-                
-                if bancada_id is None:
-                    st.error("❌ Erro ao criar a bancada. Tente novamente.")
-                    st.stop()
-                
-                # Inserir primeiro filete
-                inserir_filete(
-                    bancada_id,
-                    cultura_id,
-                    data_inicio.strftime("%Y-%m-%d")
-                )
-                
-                st.success(f"✅ Bancada '{nome_bancada}' cadastrada com sucesso!")
-                st.info(f"📌 Primeiro filete criado com cultura '{cultura_nome}' em {data_inicio.strftime('%d/%m/%Y')}")
-                
-                # Limpar formulário
-                st.session_state.nome_bancada_nova = ""
-                st.session_state.cultura_primeira_bancada = 0
-                
-                # Delay para o usuário ver a mensagem de sucesso
-                import time
-                time.sleep(1)
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"❌ Erro ao cadastrar bancada: {str(e)}")
 
+    bancada_em_salvamento = st.session_state.salvando_bancada
+    
+    with st.form("form_nova_bancada", ):
+        
+        # Seção 1: Dados da Bancada
+        st.subheader("1️⃣ Informações da Bancada")
+        nome_bancada = st.text_input(
+            "Nome da Bancada",
+            key="nome_bancada_nova",
+            help="Ex: Bancada 1, Setor A, etc.",
+            disabled=bancada_em_salvamento
+        )
+        
+        # Seção 2: Primeiro Filete (obrigatório)
+        st.subheader("2️⃣ Primeiro Filete (Obrigatório)")
+        
+        culturas = get_culturas()
+        cultura_dict = {c[1]: c[0] for c in culturas}
+        opcoes_cultura = ["Selecione a cultura"] + list(cultura_dict.keys())
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            cultura_nome = st.selectbox(
+                "Cultura",
+                opcoes_cultura,
+                index=0,
+                key="cultura_primeira_bancada",
+                help="Selecione a cultura para o primeiro filete",
+                disabled=bancada_em_salvamento
+            )
+        
+        with col2:
+            data_inicio = st.date_input(
+                "Data de Plantio",
+                value=date.today(),
+                format="DD/MM/YYYY",
+                key="data_primeira_bancada",
+                help="Data de início do cultivo",
+                disabled=bancada_em_salvamento
+            )
+        
+        col_submit, col_empty = st.columns([1, 4])
+        
+        with col_submit:
+            submitted = st.form_submit_button(
+                "💾 Cadastrar Bancada",
+                use_container_width=True,
+                disabled=bancada_em_salvamento,
+                on_click=iniciar_salvamento_bancada
+            )
 
+    if st.session_state.salvando_bancada and st.session_state.nova_bancada_pendente:
+        dados_bancada = st.session_state.nova_bancada_pendente
+        nome_bancada = dados_bancada["nome_bancada"]
+        cultura_nome = dados_bancada["cultura_nome"]
+        data_inicio = dados_bancada["data_inicio"]
+        
+        if not nome_bancada:
+            st.error("❌ Digite um nome para a bancada.")
+            st.session_state.salvando_bancada = False
+            st.session_state.nova_bancada_pendente = None
+            time.sleep(5)
+            
+
+        if cultura_nome == "Selecione a cultura":
+            st.error("❌ Selecione uma cultura para o primeiro filete.")
+            st.session_state.salvando_bancada = False
+            st.session_state.nova_bancada_pendente = None
+            time.sleep(5)
+            
+
+        if not data_inicio:
+            st.error("❌ Selecione uma data de plantio.")
+            st.session_state.salvando_bancada = False
+            st.session_state.nova_bancada_pendente = None
+            time.sleep(5)
+            
+
+        try:
+            cultura_id = cultura_dict[cultura_nome]
+            bancada_id = inserir_bancada(nome_bancada)
+
+            if bancada_id is None:
+                st.error("❌ Erro ao criar a bancada. Tente novamente.")
+                st.session_state.salvando_bancada = False
+                st.session_state.nova_bancada_pendente = None
+                time.sleep(5)
+
+            inserir_filete(
+                bancada_id,
+                cultura_id,
+                data_inicio.strftime("%Y-%m-%d")
+            )
+
+            st.success(f"✅ Bancada '{nome_bancada}' cadastrada com sucesso!")
+            st.info(f"📌 Primeiro filete criado com cultura '{cultura_nome}' em {data_inicio.strftime('%d/%m/%Y')}")
+            
+            st.session_state.reset_form = True
+            
+            time.sleep(5)
+
+        except Exception as e:
+            st.error(f"❌ Erro ao cadastrar bancada: {str(e)}")
+
+        finally:
+            st.session_state.salvando_bancada = False
+            st.session_state.nova_bancada_pendente = None
+            st.rerun()
