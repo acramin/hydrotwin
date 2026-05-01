@@ -1,5 +1,5 @@
 .vscode/
-*/hydroponic.db
+*/*.db
 .env
 
 # Byte-compiled / optimized / DLL files
