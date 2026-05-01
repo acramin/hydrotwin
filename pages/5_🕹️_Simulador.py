@@ -15,20 +15,27 @@ if usuario is None:
 
 require_page_access(usuario, "Simulador")
 
-if usuario["role"] == "admin" and os.getenv("ENV_MODE") == "DEVELOPMENT":
-    st.success("Bem-vindo, admin! Você tem acesso total ao sistema. Use as abas para cadastrar bancadas, visualizar a visão geral e acessar o monitoramento detalhado.")
-    st.markdown("É possível iniciar uma simulação de dados para testar o sistema. Clique no botão abaixo para começar a simular dados falsos entrando a cada 0.5 segundos e processando as bancadas ativas a cada 10 segundos.")
+env_mode = os.getenv("ENV_MODE")
+print(env_mode)
 
-    if st.button("Iniciar simulação de dados"):
-        simular_dados()
-        st.success(
-            "Simulação iniciada. O sistema agora insere dados falsos a cada 0.5 segundos e processa as bancadas ativas a cada 10 segundos."
-        )
+if usuario["role"] == "admin" and env_mode == "DEVELOPMENT":
+    try: 
+        st.success("Bem-vindo, admin! Você tem acesso total ao sistema. Use as abas para cadastrar bancadas, visualizar a visão geral e acessar o monitoramento detalhado.")
+        st.markdown("É possível iniciar uma simulação de dados para testar o sistema. Clique no botão abaixo para começar a simular dados falsos entrando a cada 0.5 segundos e processando as bancadas ativas a cada 10 segundos.")
 
-    if st.button("Parar simulação de dados"):
-        parar_simulacao()
-        st.success("Simulação de dados parada.")
-        st.stop()
+        if st.button("Iniciar simulação de dados"):
+            simular_dados()
+            st.success(
+                "Simulação iniciada. O sistema agora insere dados falsos a cada 0.5 segundos e processa as bancadas ativas a cada 10 segundos."
+            )
+
+        if st.button("Parar simulação de dados"):
+            parar_simulacao()
+            st.success("Simulação de dados parada.")
+            st.stop()
+    except Exception as e:
+        st.error(f"Erro ao iniciar/parar simulação: {str(e)}")
         
-else:
-    st.info("Não simule dados em produção.")
+elif usuario["role"] == "admin" and env_mode == "PRODUCTION":
+    st.warning("⚠️ Simulação de dados está desativada em modo de produção para garantir a integridade dos dados reais. Para testar a simulação, altere o modo para DEVELOPMENT no arquivo .env.")
+    

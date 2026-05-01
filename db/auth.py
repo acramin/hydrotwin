@@ -9,7 +9,6 @@ from db.crud import autenticar_usuario, criar_usuario, ensure_default_admin
 
 SESSION_USER_KEY = os.getenv("SESSION_USER_KEY")
 
-
 def bootstrap_auth():
     ensure_default_admin()
 
