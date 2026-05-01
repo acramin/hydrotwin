@@ -83,7 +83,7 @@ st.markdown(
     - Produzir mais em menos espaço
     - Diminuir o impacto ambiental
     
-    ##🤖 Como o sistema funciona?
+    ## 🤖 Como o sistema funciona?
 
     O HydroTwin utiliza sensores e automação para monitorar continuamente o cultivo.
 
@@ -95,6 +95,8 @@ st.markdown(
     - Condições do ambiente
 
     Com base nesses dados, o próprio sistema pode tomar decisões automaticamente, ajustando o que for necessário para manter as plantas sempre nas melhores condições.
+    
+    ![Diagrama do sistema HydroTwin](https://raw.githubusercontent.com/acramin/hydrotwin/refs/heads/main/assets/esquema_NFT.png)
 
     ## 📡 Tecnologia a favor do produtor
 
