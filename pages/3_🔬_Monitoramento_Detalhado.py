@@ -7,7 +7,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import get_bancadas
-from db.auth import render_auth_gate
+from db.auth import get_current_user
 from core.monitoramento_detalhado import (
     carregar_monitoramento_bancada,
     montar_df_anomalias,
@@ -28,7 +28,10 @@ st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="�
 
 st.title("🔬 Monitoramento Detalhado")
 
-usuario = render_auth_gate("HydroTwin")
+usuario = get_current_user()
+if usuario is None:
+    st.error("❌ Você precisa estar autenticado para acessar esta página.")
+    st.stop()
 
 rows = get_bancadas()
 

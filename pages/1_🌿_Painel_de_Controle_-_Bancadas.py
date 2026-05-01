@@ -7,15 +7,20 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from db.auth import render_auth_gate, require_role
+from db.auth import get_current_user, require_page_access
 from db.crud import get_bancadas, get_culturas, get_filetes_by_bancada, inserir_bancada, inserir_filete
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide")
 
 st.title("🌱 HydroTwin - Painel de Controle")
 
-usuario = render_auth_gate("HydroTwin")
-require_role(usuario, "admin", "A página de cadastro de bancadas é restrita ao usuário com permissão de admin.")
+# Verificar autenticação e acesso
+usuario = get_current_user()
+if usuario is None:
+    st.error("❌ Você precisa estar autenticado para acessar esta página.")
+    st.stop()
+
+require_page_access(usuario, "Painel de Controle - Bancadas")
 
 # Separar em abas
 tab1, tab2 = st.tabs(["📋 Bancadas Cadastradas", "➕ Nova Bancada"])

@@ -8,8 +8,7 @@ if str(ROOT_DIR) not in sys.path:
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
 
-from db.auth import render_auth_gate, require_role
-
+from db.auth import get_current_user
 from core.visao_geral import *
 
 # =========================
@@ -18,11 +17,12 @@ from core.visao_geral import *
 
 st.title("📊 Visão Geral")
 
-usuario = render_auth_gate("HydroTwin")
+usuario = get_current_user()
+if usuario is None:
+    st.error("❌ Você precisa estar autenticado para acessar esta página.")
+    st.stop()
 
 status = get_last_status()
-
-# print("Status:", status)
 
 if len(status) == 0 and usuario["role"] == "admin":
     st.info("Cadastre uma bancada para acessar a visão geral.")

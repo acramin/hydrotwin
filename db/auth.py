@@ -110,3 +110,16 @@ def require_role(user, allowed_roles, message=None):
     if user["role"] not in allowed_roles:
         st.error(message or "Seu perfil não tem acesso a esta área.")
         st.stop()
+
+
+def require_page_access(user, page_name):
+    """
+    Verifica se o usuário tem acesso à página.
+    Se não tiver, exibe uma mensagem de erro e interrompe a execução.
+    """
+    from others.page_access import has_page_access
+    
+    if not has_page_access(user["role"], page_name):
+        st.error(f"Seu perfil ({user['role']}) não tem acesso a esta página.")
+        st.info("Se você acredita que isso é um erro, entre em contato com o administrador do sistema.")
+        st.stop()
