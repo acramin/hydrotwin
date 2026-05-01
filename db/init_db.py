@@ -12,14 +12,17 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import insert_culturas, ensure_default_admin
-from others.env import get_env_mode, is_production_mode, get_db_name
+from others.env import get_env_mode, is_production_mode, get_db_name, is_development_mode
 
 # Caminho do banco de dados (padronizado pelo env)
 DB_PATH = ROOT_DIR / "db" / get_db_name()
 
+def conectar_db():
+    return sqlite3.connect(str(DB_PATH))
+
 # Deleta tudo
-def drop_tables(DB_PATH=DB_PATH):
-    conn = sqlite3.connect(str(DB_PATH))
+def drop_tables():
+    conn = conectar_db()
     cursor = conn.cursor()
     
     cursor.execute("DROP TABLE IF EXISTS sensor_raw;")
@@ -34,8 +37,8 @@ def drop_tables(DB_PATH=DB_PATH):
     conn.close()
 
 # Cria todas tabelas e indexes
-def create_tables(DB_PATH=DB_PATH):
-    conn = sqlite3.connect(str(DB_PATH))
+def create_tables():
+    conn = conectar_db()
     cursor = conn.cursor()
     
     # Tabela de bancada
@@ -177,11 +180,11 @@ def create_tables(DB_PATH=DB_PATH):
 if __name__ == "__main__":
     env_mode = get_env_mode()
 
-    if is_production_mode():
+    if is_production_mode() and DB_PATH.exists():
         print("Modo de produção detectado. O banco de dados não será reinicializado para evitar perda de dados.")
         sys.exit(0)
 
-    else: 
+    elif (is_production_mode() and not DB_PATH.exists()) or is_development_mode():
         drop_tables()
         print("Tabelas deletadas (se existiam).")
         create_tables()
