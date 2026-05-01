@@ -21,15 +21,12 @@ Para o simulador após um tempo
 from db.crud import inserir_bancada, inserir_filete, ensure_default_admin, insert_culturas
 from db.init_db import drop_tables, create_tables
 from simulator.simulator_port import simular_dados, parar_simulacao
-from others.env import is_development_mode, get_db_name
-
-DB_PATH = ROOT_DIR / "db" / get_db_name()
-    
+from others.env import is_development_mode
 if __name__ == "__main__":
     
     if is_development_mode():
-        drop_tables(DB_PATH=DB_PATH)
-        create_tables(DB_PATH=DB_PATH)
+        drop_tables()
+        create_tables()
         ensure_default_admin()
         insert_culturas()
         
