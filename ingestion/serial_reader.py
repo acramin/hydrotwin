@@ -4,10 +4,6 @@ from datetime import datetime
 import time
 import threading
 from queue import Queue
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import sys
 from pathlib import Path

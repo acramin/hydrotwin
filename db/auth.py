@@ -1,9 +1,4 @@
 import streamlit as st
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from pathlib import Path
 import sys
@@ -13,9 +8,9 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import autenticar_usuario, criar_usuario, ensure_default_admin
-from others.env import is_development_mode
+from others.env import is_development_mode, user_session_key, get_admin_credentials
 
-SESSION_USER_KEY = os.getenv("SESSION_USER_KEY")
+SESSION_USER_KEY = user_session_key()
 
 def bootstrap_auth():
     ensure_default_admin()
@@ -27,8 +22,7 @@ def bootstrap_auth():
     if is_development_mode() and st.session_state[SESSION_USER_KEY] is None:
         try:
             usuario = autenticar_usuario(
-                os.getenv("DEFAULT_ADMIN_USERNAME"),
-                os.getenv("DEFAULT_ADMIN_PASSWORD")
+                *get_admin_credentials()
             )
             if usuario:
                 st.session_state[SESSION_USER_KEY] = usuario
@@ -47,77 +41,6 @@ def set_current_user(user):
 
 def logout_user():
     st.session_state[SESSION_USER_KEY] = None
-
-
-def render_user_badge():
-    user = get_current_user()
-    if not user:
-        return
-
-    with st.sidebar:
-        st.caption(f"Logado como {user['username']} ({user['role']})")
-        if st.button("Sair", use_container_width=True):
-            logout_user()
-            st.rerun()
-
-
-def render_auth_gate(app_name="HydroTwin"):
-    bootstrap_auth()
-    user = get_current_user()
-
-    if user:
-        render_user_badge()
-        return user
-
-    st.subheader(f"Acesso ao {app_name}")
-    st.info("Entre com uma conta existente ou crie um usuário viewer para acessar as visualizações.")
-
-    tab_login, tab_cadastro = st.tabs(["Entrar", "Criar conta"])
-
-    with tab_login:
-        with st.form("login_form"):
-            username = st.text_input("Usuário", placeholder="ex: master")
-            password = st.text_input("Senha", type="password")
-            submitted = st.form_submit_button("Entrar", use_container_width=True)
-
-        if submitted:
-            usuario = autenticar_usuario(username, password)
-            if usuario is None:
-                st.error("Usuário ou senha inválidos.")
-            else:
-                set_current_user(usuario)
-                st.success(f"Bem-vindo, {usuario['username']}!")
-                st.rerun()
-
-    with tab_cadastro:
-        with st.form("register_form"):
-            novo_username = st.text_input("Novo usuário", placeholder="ex: joao.silva")
-            nova_senha = st.text_input("Senha", type="password")
-            confirmar_senha = st.text_input("Confirmar senha", type="password")
-            submitted = st.form_submit_button("Criar usuário", use_container_width=True)
-
-        if submitted:
-            username_normalizado = novo_username.strip()
-            if not username_normalizado:
-                st.warning("Informe um nome de usuário.")
-            elif username_normalizado.lower() == "admin":
-                st.warning("O usuário admin é reservado ao administrador padrão.")
-            elif len(nova_senha) < 6:
-                st.warning("A senha deve ter pelo menos 6 caracteres.")
-            elif nova_senha != confirmar_senha:
-                st.warning("As senhas informadas não conferem.")
-            else:
-                try:
-                    criar_usuario(username_normalizado, nova_senha, role="viewer")
-                except Exception:
-                    st.error("Não foi possível criar o usuário. Verifique se o nome já não está em uso.")
-                else:
-                    usuario = autenticar_usuario(username_normalizado, nova_senha)
-                    set_current_user(usuario)
-                    st.success("Usuário criado com sucesso. Você já está logado.")
-                    st.rerun()
-
-    st.stop()
 
 
 def require_role(user, allowed_roles, message=None):

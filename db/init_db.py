@@ -1,11 +1,7 @@
 # Cria estrutura do banco de dados
-import os
 from pathlib import Path
 import sqlite3
 import sys
-from dotenv import load_dotenv
-
-load_dotenv()
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -16,7 +12,7 @@ from others.env import get_env_mode, is_production_mode, get_db_name, is_develop
 
 # Caminho do banco de dados (padronizado pelo env)
 DB_PATH = ROOT_DIR / "db" / get_db_name()
-print(f"Usando banco de dados em: {DB_PATH}")
+# print(f"Usando banco de dados em: {DB_PATH}")
 
 def conectar_db():
     return sqlite3.connect(str(DB_PATH))
