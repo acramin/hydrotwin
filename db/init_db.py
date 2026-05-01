@@ -12,9 +12,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import insert_culturas, ensure_default_admin
+from others.env import get_env_mode, is_production_mode, get_db_name
 
-# Caminho do banco de dados
-DB_PATH = ROOT_DIR / "db" / "hydroponic.db"
+# Caminho do banco de dados (padronizado pelo env)
+DB_PATH = ROOT_DIR / "db" / get_db_name()
 
 # Deleta tudo
 def drop_tables(DB_PATH=DB_PATH):
@@ -174,11 +175,9 @@ def create_tables(DB_PATH=DB_PATH):
     conn.close()
 
 if __name__ == "__main__":
-    env_mode = os.getenv("ENV_MODE")
-    
-    print(f"Modo atual: {env_mode}")
-    
-    if env_mode == "PRODUCTION":
+    env_mode = get_env_mode()
+
+    if is_production_mode():
         print("Modo de produção detectado. O banco de dados não será reinicializado para evitar perda de dados.")
         sys.exit(0)
 

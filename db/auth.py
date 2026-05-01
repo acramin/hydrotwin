@@ -5,10 +5,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from pathlib import Path
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from db.crud import autenticar_usuario, criar_usuario, ensure_default_admin
+from others.env import is_development_mode
 
 SESSION_USER_KEY = os.getenv("SESSION_USER_KEY")
-ENV_MODE = os.getenv("ENV_MODE", "PRODUCTION")
 
 def bootstrap_auth():
     ensure_default_admin()
@@ -17,7 +24,7 @@ def bootstrap_auth():
         st.session_state[SESSION_USER_KEY] = None
     
     # Em modo DEVELOPMENT, fazer login automático como admin se não houver usuário logado
-    if ENV_MODE == "DEVELOPMENT" and st.session_state[SESSION_USER_KEY] is None:
+    if is_development_mode() and st.session_state[SESSION_USER_KEY] is None:
         try:
             usuario = autenticar_usuario(
                 os.getenv("DEFAULT_ADMIN_USERNAME"),

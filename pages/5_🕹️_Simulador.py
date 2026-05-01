@@ -1,10 +1,7 @@
 import streamlit as st
 from simulator.simulator_port import simular_dados, parar_simulacao
 from db.auth import get_current_user, require_page_access
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from others.env import is_development_mode, is_production_mode
 
 st.set_page_config(page_title="Hydroponic Monitor", layout="wide", page_icon="🌱")
 
@@ -15,10 +12,7 @@ if usuario is None:
 
 require_page_access(usuario, "Simulador")
 
-env_mode = os.getenv("ENV_MODE")
-print(env_mode)
-
-if usuario["role"] == "admin" and env_mode == "DEVELOPMENT":
+if usuario["role"] == "admin" and is_development_mode():
     try: 
         st.success("Bem-vindo, admin! Você tem acesso total ao sistema. Use as abas para cadastrar bancadas, visualizar a visão geral e acessar o monitoramento detalhado.")
         st.markdown("É possível iniciar uma simulação de dados para testar o sistema. Clique no botão abaixo para começar a simular dados falsos entrando a cada 0.5 segundos e processando as bancadas ativas a cada 10 segundos.")
@@ -36,6 +30,6 @@ if usuario["role"] == "admin" and env_mode == "DEVELOPMENT":
     except Exception as e:
         st.error(f"Erro ao iniciar/parar simulação: {str(e)}")
         
-elif usuario["role"] == "admin" and env_mode == "PRODUCTION":
+elif usuario["role"] == "admin" and is_production_mode():
     st.warning("⚠️ Simulação de dados está desativada em modo de produção para garantir a integridade dos dados reais. Para testar a simulação, altere o modo para DEVELOPMENT no arquivo .env.")
     

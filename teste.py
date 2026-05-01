@@ -11,23 +11,23 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 """
-Faz login com admin
-Cadastra bancadas e filetes atutomaticamente
+Liberar acesso de admin
+Cadastra bancadas e filetes automaticamente
 Gerar banco a parte para não impactar o banco real
 Ligar o simulador
-Para o simulador 
-
+Para o simulador após um tempo
 """
 
 from db.crud import inserir_bancada, inserir_filete, ensure_default_admin, insert_culturas
 from db.init_db import drop_tables, create_tables
 from simulator.simulator_port import simular_dados, parar_simulacao
+from others.env import is_development_mode, get_db_name
 
-DB_PATH = "db" + "/" + os.getenv("DB_TEST_NAME", "hydroponic_test.db")
+DB_PATH = ROOT_DIR / "db" / get_db_name()
     
 if __name__ == "__main__":
     
-    if os.getenv("ENV_MODE") == "DEVELOPMENT":
+    if is_development_mode():
         drop_tables(DB_PATH=DB_PATH)
         create_tables(DB_PATH=DB_PATH)
         ensure_default_admin()

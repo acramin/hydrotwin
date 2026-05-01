@@ -17,6 +17,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from db.crud import processar_sensor as processar_sensor_db
+from others.env import get_db_name
 
 # ================= CONFIG =================
 PORTA = 'COM9'
@@ -32,7 +33,7 @@ bancadas_lock = threading.Lock()
 stop_event = threading.Event()
 
 # ================= DB =================
-DB_NAME = os.getenv("DB_NAME", "hydroponic_teste.db")
+DB_NAME = get_db_name()
 DB_PATH = ROOT_DIR / "db" / DB_NAME
 
 def conectar_db():

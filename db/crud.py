@@ -26,8 +26,10 @@ from core.classificar import (
 from core.anomalias import detectar_anomalias
 from core.previsao import prever_estado
 
-DB_NAME = os.getenv("DB_NAME", "hydroponic_teste.db")
-DB_PATH = Path(__file__).resolve().with_name(DB_NAME)
+from others.env import get_db_name
+
+DB_NAME = get_db_name()
+DB_PATH = ROOT_DIR / "db" / DB_NAME
 
 USER_ROLES = ("admin", "viewer")
 DEFAULT_ADMIN_USERNAME = os.getenv("DEFAULT_ADMIN_USERNAME")
