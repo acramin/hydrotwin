@@ -1,0 +1,1 @@
+# cria mensagem user friendly para todos erros que ainda estão brutos

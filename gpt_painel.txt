@@ -1,0 +1,263 @@
+import streamlit as st
+from datetime import date
+from pathlib import Path
+import sys
+import time
+
+# =========================
+# CONFIGURAÇÃO DE PATH
+# =========================
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from db.auth import get_current_user, require_page_access
+from db.crud import (
+    get_bancadas,
+    get_culturas,
+    get_filetes_by_bancada,
+    inserir_bancada,
+    inserir_filete,
+)
+
+# =========================
+# CONFIG STREAMLIT
+# =========================
+st.set_page_config(page_title="Hydroponic Monitor", layout="wide")
+st.title("🌱 HydroTwin - Painel de Controle")
+
+
+# =========================
+# AUTENTICAÇÃO
+# =========================
+def autenticar_usuario():
+    usuario = get_current_user()
+
+    if not usuario:
+        st.error("❌ Você precisa estar autenticado para acessar esta página.")
+        st.stop()
+
+    require_page_access(usuario, "Painel de Controle - Bancadas")
+    return usuario
+
+
+# =========================
+# DADOS AUXILIARES
+# =========================
+def carregar_culturas_dict():
+    culturas = get_culturas()
+    return {c[1]: c[0] for c in culturas}
+
+
+def get_select_cultura_options(culturas_dict):
+    return ["Selecione a cultura"] + list(culturas_dict.keys())
+
+
+# =========================
+# TAB 1 - LISTAGEM
+# =========================
+def render_bancadas():
+    st.header("Bancadas Cadastradas", help="Visualize e gerencie suas bancadas e filetes")
+
+    bancadas = get_bancadas()
+
+    if not bancadas:
+        st.info("Nenhuma bancada cadastrada ainda. Crie uma nova bancada para começar!")
+        return
+
+    bancadas.sort(key=lambda x: x[0])
+
+    for bancada_id, nome, cultura, filete_id, data_plantio, data_colheita in bancadas:
+        render_bancada_item(bancada_id, nome)
+
+
+def render_bancada_item(bancada_id, nome_bancada):
+    with st.expander(f"🌿 {nome_bancada}", expanded=False):
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            st.markdown(f"**ID da Bancada:** {bancada_id}")
+            render_filetes(bancada_id)
+
+        with col2:
+            if st.button("➕ Adicionar Filete", key=f"add_filete_{bancada_id}"):
+                st.session_state[f"show_filete_form_{bancada_id}"] = True
+
+        render_form_filete(bancada_id)
+
+
+def render_filetes(bancada_id):
+    filetes = get_filetes_by_bancada(bancada_id)
+
+    st.markdown("**Filetes Ativas:**")
+
+    if not filetes:
+        st.caption("Nenhum filete cadastrado")
+        return
+
+    filetes.sort(key=lambda x: x[0])
+
+    for f_id, _, _, cultura_nome, data_plant, _ in filetes:
+        c1, c2, c3 = st.columns(3)
+
+        c1.caption(f"**Filete #{f_id}**")
+        c2.caption(f"Cultura: {cultura_nome or 'N/A'}")
+        c3.caption(f"Plantio: {data_plant}")
+
+
+def render_form_filete(bancada_id):
+    if not st.session_state.get(f"show_filete_form_{bancada_id}"):
+        return
+
+    st.markdown("---")
+    st.markdown("**Adicionar Novo Filete**")
+
+    culturas = carregar_culturas_dict()
+    options = get_select_cultura_options(culturas)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        cultura = st.selectbox("Cultura", options, key=f"cultura_{bancada_id}")
+
+    with col2:
+        data_plantio = st.date_input(
+            "Data de Plantio",
+            value=date.today(),
+            format="DD/MM/YYYY",
+            key=f"data_{bancada_id}",
+        )
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        if st.button("✅ Confirmar", key=f"confirm_{bancada_id}"):
+            salvar_filete(bancada_id, cultura, data_plantio, culturas)
+
+    with c2:
+        if st.button("❌ Cancelar", key=f"cancel_{bancada_id}"):
+            st.session_state[f"show_filete_form_{bancada_id}"] = False
+            st.rerun()
+
+
+def salvar_filete(bancada_id, cultura_nome, data_plantio, culturas_dict):
+    if cultura_nome == "Selecione a cultura":
+        st.error("Selecione uma cultura.")
+        return
+
+    try:
+        cultura_id = culturas_dict[cultura_nome]
+
+        inserir_filete(
+            bancada_id,
+            cultura_id,
+            data_plantio.strftime("%Y-%m-%d"),
+        )
+
+        st.success("✅ Filete criado com sucesso!")
+        st.session_state[f"show_filete_form_{bancada_id}"] = False
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Erro ao criar filete: {e}")
+
+
+# =========================
+# TAB 2 - NOVA BANCADA
+# =========================
+def init_state():
+    defaults = {
+        "salvando_bancada": False,
+        "nova_bancada": None,
+        "reset_form": False,
+    }
+
+    for k, v in defaults.items():
+        st.session_state.setdefault(k, v)
+
+
+def render_nova_bancada():
+    st.header("Cadastrar Nova Bancada")
+
+    st.markdown(
+        """
+        1. Nome da bancada  
+        2. Primeiro filete (obrigatório)  
+        3. Filetes adicionais podem ser incluídos depois
+        """
+    )
+
+    culturas = carregar_culturas_dict()
+    options = get_select_cultura_options(culturas)
+
+    with st.form("form_bancada"):
+        nome = st.text_input("Nome da Bancada")
+        cultura = st.selectbox("Cultura", options)
+        data = st.date_input("Data de Plantio", value=date.today())
+
+        submitted = st.form_submit_button("💾 Cadastrar")
+
+    if submitted:
+        st.session_state.nova_bancada = {
+            "nome": nome,
+            "cultura": cultura,
+            "data": data,
+            "culturas_dict": culturas,
+        }
+        processar_bancada()
+
+
+def processar_bancada():
+    dados = st.session_state.nova_bancada
+
+    nome = dados["nome"]
+    cultura = dados["cultura"]
+    data = dados["data"]
+    culturas = dados["culturas_dict"]
+
+    if not nome:
+        st.error("Informe o nome da bancada.")
+        return
+
+    if cultura == "Selecione a cultura":
+        st.error("Selecione uma cultura.")
+        return
+
+    try:
+        cultura_id = culturas[cultura]
+
+        bancada_id = inserir_bancada(nome)
+
+        if not bancada_id:
+            st.error("Erro ao criar bancada.")
+            return
+
+        inserir_filete(
+            bancada_id,
+            cultura_id,
+            data.strftime("%Y-%m-%d"),
+        )
+
+        st.success(f"Bancada '{nome}' criada com sucesso!")
+        st.session_state.nova_bancada = None
+
+        time.sleep(1)
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Erro: {e}")
+
+
+# =========================
+# APP PRINCIPAL
+# =========================
+usuario = autenticar_usuario()
+
+tab1, tab2 = st.tabs(["📋 Bancadas", "➕ Nova Bancada"])
+
+with tab1:
+    render_bancadas()
+
+with tab2:
+    init_state()
+    render_nova_bancada()
