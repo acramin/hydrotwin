@@ -92,7 +92,7 @@ def ensure_default_admin():
         conn.close()
         
 def criar_usuario(email, role="viewer"):
-    from hydrotwin.authentication.email import enviar_email_acesso
+    from hydrotwin.authentication.mailer import enviar_email_acesso
     
     logger.debug("criar_usuario(email, role='viewer')")
     USER_ROLES = ("admin", "viewer")
