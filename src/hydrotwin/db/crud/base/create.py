@@ -144,6 +144,16 @@ def create_tables():
     """)
     
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sessao_usuario (
+        token TEXT PRIMARY KEY,
+        usuario_id INTEGER NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT (datetime('now', '-3 hours')),
+        FOREIGN KEY (usuario_id) REFERENCES usuario (id) ON DELETE CASCADE
+    );               
+    """)
+    
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS controlador (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,

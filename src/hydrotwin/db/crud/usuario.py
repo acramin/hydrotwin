@@ -251,3 +251,87 @@ def autenticar_usuario(username, password):
         "role": usuario["role"],
         "email": usuario["email"],
     }
+    
+import uuid
+
+### Gestão de Sessões / Tokens ###
+def criar_sessao_usuario(usuario_id, expires_in_days=7):
+    """Gera um token UUID único e salva no banco de dados."""
+    token = str(uuid.uuid4())
+    logger.debug(f"criar_sessao_usuario(usuario_id={usuario_id})")
+    
+    conn = conectar_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO sessao_usuario (token, usuario_id, expires_at)
+            VALUES (?, ?, datetime('now', '-3 hours', ?))
+            """,
+            (token, usuario_id, f"+{expires_in_days} days"),
+        )
+        conn.commit()
+        return token
+    finally:
+        conn.close()
+
+
+def obter_usuario_por_token_sessao(token):
+    """Verifica se o token de sessão existe e se ainda é válido."""
+    if not token:
+        return None
+
+    conn = conectar_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT u.id, u.username, u.role, u.email 
+            FROM usuario u
+            JOIN sessao_usuario s ON u.id = s.usuario_id
+            WHERE s.token = ? AND s.expires_at > datetime('now', '-3 hours')
+            """,
+            (token,),
+        )
+        linha = cursor.fetchone()
+        if not linha:
+            return None
+
+        return {
+            "id": linha[0],
+            "username": linha[1],
+            "role": linha[2],
+            "email": linha[3],
+        }
+    finally:
+        conn.close()
+
+
+def revogar_sessao_usuario(token):
+    """Deleta a sessão no logout."""
+    if not token:
+        return
+
+    conn = conectar_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sessao_usuario WHERE token = ?", (token,))
+        conn.commit()
+    finally:
+        conn.close()
+        
+def limpar_sessoes_expiradas():
+    """Remove todas as sessões que já ultrapassaram a data/hora de expiração."""
+    conn = conectar_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            DELETE FROM sessao_usuario 
+            WHERE expires_at <= datetime('now', '-3 hours')
+            """
+        )
+        conn.commit()
+        logger.debug(f"Sessões expiradas removidas: {cursor.rowcount}")
+    finally:
+        conn.close()
