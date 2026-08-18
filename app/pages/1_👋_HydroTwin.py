@@ -3,11 +3,11 @@ from __future__ import annotations
 import streamlit as st
 from hydrotwin import (
     autenticar_usuario,
-    bootstrap_auth,
     finalizar_cadastro,
     get_current_user,
     logger,
     set_current_user,
+    logout_user,
 )
 
 logger.debug("1_👋_HydroTwin.py")
@@ -20,7 +20,6 @@ st.set_page_config(
 )
 
 # Bootstrap do sistema de autenticação
-bootstrap_auth()
 usuario = get_current_user()
 
 # ==========================================
@@ -116,7 +115,7 @@ else:
             )
         with col_u2:
             if st.button("🚪 Sair / Logout", width='stretch'):
-                set_current_user(None)
+                logout_user()
                 st.rerun()
 
 st.divider()
